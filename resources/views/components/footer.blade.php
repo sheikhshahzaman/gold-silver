@@ -28,7 +28,7 @@
                     </span>
                 </div>
                 <p class="text-sm leading-relaxed" style="color: #555;">
-                    Pakistan's trusted source for live gold, silver &amp; currency rates. Real-time bullion prices from Rawalpindi/Islamabad market benchmark.
+                    Islamabad's trusted source for live gold, silver &amp; currency rates. Real-time bullion prices from Islamabad/Rawalpindi market benchmark.
                 </p>
             </div>
 
@@ -111,7 +111,7 @@
         <div class="mt-10 pt-6" style="border-top: 1px solid #C6963C40;">
             <div class="flex flex-col md:flex-row items-center justify-between gap-3">
                 <p class="text-xs" style="color: #888;">
-                    &copy; {{ date('Y') }} PakGold Rates. All rights reserved.
+                    &copy; {{ date('Y') }} Islamabad Bullion Exchange. All rights reserved.
                 </p>
                 <p class="text-xs text-center md:text-right max-w-xl" style="color: #aaa;">
                     Disclaimer: Rates displayed are for informational purposes only and may vary at the time of transaction. Always confirm with your dealer before trading.

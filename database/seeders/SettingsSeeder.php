@@ -13,10 +13,10 @@ class SettingsSeeder extends Seeder
     public function run(): void
     {
         $settings = [
-            'site_name' => 'PakGold Rates',
+            'site_name' => 'Islamabad Bullion Exchange',
             'contact_phone' => '+92-300-0000000',
             'contact_whatsapp' => '+92-300-0000000',
-            'contact_email' => 'info@pakgold.com',
+            'contact_email' => 'info@islamabadbullionexchange.com',
             'contact_address' => 'Islamabad, Pakistan',
             'hours_mon_thu' => '10AM - 8PM',
             'hours_fri' => '3PM - 9:30PM',

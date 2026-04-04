@@ -5,11 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>{{ $title ?? 'PakGold Rates' }}</title>
+    <title>{{ $title ?? 'Islamabad Bullion Exchange' }}</title>
 
     <x-seo-meta
-        :title="$title ?? 'PakGold Rates - Live Gold & Silver Prices in Pakistan'"
-        :description="$description ?? 'Get live gold, silver and currency rates in Pakistan. Trusted bullion exchange rates updated in real-time.'"
+        :title="$title ?? 'Islamabad Bullion Exchange - Live Gold & Silver Prices in Pakistan'"
+        :description="$description ?? 'Islamabad Bullion Exchange - Get live gold, silver and currency rates in Pakistan. Trusted bullion exchange rates updated in real-time.'"
         :url="$url ?? url()->current()"
     />
 
