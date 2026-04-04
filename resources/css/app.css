@@ -1,0 +1,112 @@
+@import 'tailwindcss';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../vendor/livewire/livewire/src/**/*.blade.php';
+@source '../../vendor/filament/**/*.blade.php';
+@source '../../storage/framework/views/*.php';
+@source '../**/*.blade.php';
+@source '../**/*.js';
+
+@theme {
+    --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+        'Segoe UI Symbol', 'Noto Color Emoji';
+
+    /* Deep green palette (main theme) */
+    --color-emerald-950: #0A2E23;
+    --color-emerald-900: #0F3D2E;
+    --color-emerald-800: #165A42;
+    --color-emerald-700: #1C7555;
+
+    /* Gold palette */
+    --color-gold: #C6963C;
+    --color-gold-light: #DBBF7E;
+    --color-gold-dark: #A67922;
+
+    /* Light card backgrounds */
+    --color-cream: #FDF8F0;
+    --color-cream-dark: #F5EDE0;
+    --color-warm-white: #FFFDF8;
+    --color-warm-gray: #E8DFD0;
+}
+
+/* ── Gold gradient button ── */
+.btn-gold {
+    @apply inline-flex items-center justify-center px-6 py-3 font-semibold text-white rounded-lg transition-all duration-300;
+    background: linear-gradient(135deg, var(--color-gold-light), var(--color-gold), var(--color-gold-dark));
+    box-shadow: 0 4px 15px rgba(198, 150, 60, 0.35);
+}
+.btn-gold:hover {
+    box-shadow: 0 6px 25px rgba(198, 150, 60, 0.5);
+    transform: translateY(-1px);
+}
+.btn-gold:active { transform: translateY(0); }
+
+/* ── Light card on dark green background ── */
+.glass-card {
+    @apply rounded-xl;
+    background: var(--color-warm-white);
+    border: 1px solid var(--color-warm-gray);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+/* ── Gold tinted card ── */
+.gold-card {
+    @apply rounded-xl;
+    background: linear-gradient(135deg, #FFF9EF, #FFF3E0);
+    border: 1px solid rgba(198, 150, 60, 0.25);
+    box-shadow: 0 2px 8px rgba(198, 150, 60, 0.1);
+}
+
+/* ── Dark green card (for contrast sections like international rates) ── */
+.dark-card {
+    @apply rounded-xl;
+    background: var(--color-emerald-900);
+    border: 1px solid rgba(198, 150, 60, 0.2);
+}
+
+/* ── Price badge styles ── */
+.price-badge-buy {
+    @apply inline-flex items-center gap-1 px-3 py-1 text-sm font-bold rounded-md;
+    background: #E8F5E9;
+    color: #1B5E20;
+    border: 1px solid #A5D6A7;
+}
+.price-badge-sell {
+    @apply inline-flex items-center gap-1 px-3 py-1 text-sm font-bold rounded-md;
+    background: #FFF3E0;
+    color: #E65100;
+    border: 1px solid #FFCC80;
+}
+
+/* ── Pulsing live dot ── */
+.live-dot {
+    @apply relative w-2.5 h-2.5 rounded-full bg-green-500;
+}
+.live-dot::before {
+    content: '';
+    @apply absolute inset-0 rounded-full bg-green-500;
+    animation: live-pulse 1.5s ease-in-out infinite;
+}
+@keyframes live-pulse {
+    0% { transform: scale(1); opacity: 0.7; }
+    50% { transform: scale(2.2); opacity: 0; }
+    100% { transform: scale(1); opacity: 0; }
+}
+
+/* ── News ticker ── */
+.ticker-wrapper { @apply overflow-hidden whitespace-nowrap; }
+.ticker-content {
+    display: inline-block;
+    animation: ticker-scroll 30s linear infinite;
+}
+.ticker-content:hover { animation-play-state: paused; }
+@keyframes ticker-scroll {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--color-emerald-950); }
+::-webkit-scrollbar-thumb { background: var(--color-emerald-700); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-gold); }
