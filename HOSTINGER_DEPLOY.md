@@ -11,6 +11,82 @@ needs to be replaced is clearly marked with `<ANGLE BRACKETS>`.
 
 ---
 
+## Handoff note — for the Claude collaborator running this deploy
+
+Hello. The project owner is handing this runbook to you because they want
+**islamabadbullionexchange.com** live on their Hostinger shared hosting
+account, powered by this repository. You are expected to do the full
+deployment on their behalf — they will supply credentials and the hPanel
+account, and you will execute the steps below.
+
+**Repo**: https://github.com/sheikhshahzaman/gold-silver
+**Branch**: `main` (always the latest deploy-ready commit)
+**hPanel URL**: https://hpanel.hostinger.com/websites/islamabadbullionexchange.com
+**End state**: https://islamabadbullionexchange.com is live, the homepage
+renders real prices with a 3-second poll, `/admin` logs in, and the
+1-minute price-fetch cron is ticking.
+
+### What to ask the project owner before you start
+
+Collect all of these in a single message so you don't have to keep
+pausing the deploy to wait for answers:
+
+1. Hostinger **SSH host**, **port**, **username**, and **password**
+   (they can find/reset these in hPanel → Advanced → SSH Access).
+2. MySQL **database name**, **username**, **password**, and **host** — or
+   confirmation that you should walk them through creating a new database
+   in Section 2 of this doc.
+3. Whether they want to keep the default seeded admin account
+   (`admin@islamabadbullionexchange.com` / `password`, which you will
+   force them to change after first login) or whether they want a
+   specific admin email set up now.
+4. Confirmation that `islamabadbullionexchange.com` is already pointed at
+   their Hostinger account (they can verify on the hPanel dashboard).
+5. Whether they have a preferred PHP version override already applied,
+   or whether you should set it to PHP 8.3 in Section 4.
+
+### What you do not need
+
+No Node.js on the server. No rsync, scp, or File Manager uploads. No
+local npm runs. The pre-built Vite assets (`public/build/`) ship through
+the git clone directly, so `git clone` + `composer install` gives the
+server everything it needs to serve the site.
+
+### Ground rules
+
+- **Work through the numbered sections in order.** They are ordered so
+  that each step's prerequisites are satisfied by the steps above it.
+  Do not skip or reorder.
+- **Every command is copy-pasteable.** Replace `<PLACEHOLDERS>` with the
+  real values the project owner gave you. Do not guess values.
+- **If a command fails**, check Section 19 (Troubleshooting) before
+  improvising. If the error isn't covered there, paste the exact output
+  to the project owner and ask for direction — do not attempt to
+  "fix it by trial" on a production system.
+- **Do not commit or push anything from the server.** The server is a
+  pull-only consumer of `main`. All git write operations stay on the
+  project owner's local machine. If you find yourself wanting to `git
+  commit` on Hostinger, stop and ask first.
+- **Never `git push --force`.** Ever. For any reason.
+- **Do not re-run seeders on an already-live database.** `db:seed --force`
+  is listed in Section 10 for the initial deploy only; running it a
+  second time will duplicate pages, ticker items, and payment settings.
+  Migrations (`migrate --force`) are safe to re-run; seeders are not.
+- **If you change `.env`**, tell the project owner exactly which keys
+  you modified so they know what changed.
+- **After Section 17 end-to-end verification passes**, report back to the
+  project owner with the live URL and a quick summary of what you did.
+  If any verification check failed, do not claim success — stop and ask.
+
+If you encounter anything this document doesn't cover, or a situation
+that feels destructive or irreversible, stop and ask the project owner
+before proceeding. Shared hosting is forgiving of mistakes that only
+affect the filesystem and are under `~/gold-website/`, but destructive
+MySQL operations and permissions changes outside the home directory can
+break the whole account.
+
+---
+
 ## 0. What you are deploying
 
 - **Stack**: PHP 8.3+, Laravel 13, Livewire 4, Filament 5, Tailwind 4, Vite 8
