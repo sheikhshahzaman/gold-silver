@@ -37,7 +37,9 @@ class SiteSettings extends Page implements HasForms
     public function mount(): void
     {
         $this->form->fill([
-            'site_name' => Setting::get('site_name', 'PakGold Rates'),
+            'site_name' => Setting::get('site_name', 'Islamabad Bullion Exchange'),
+            'international_spread_gold_pct' => (float) Setting::get('international_spread_gold_pct', 0.05),
+            'international_spread_silver_pct' => (float) Setting::get('international_spread_silver_pct', 0.1),
         ]);
     }
 
@@ -49,7 +51,27 @@ class SiteSettings extends Page implements HasForms
                     ->schema([
                         TextInput::make('site_name')
                             ->label('Site Name')
-                            ->placeholder('PakGold Rates'),
+                            ->placeholder('Islamabad Bullion Exchange'),
+                    ]),
+                Section::make('International Spread')
+                    ->description('Margin applied to international BID prices to compute the displayed ASK. Only affects the International Metal Rates table (USD/oz).')
+                    ->schema([
+                        TextInput::make('international_spread_gold_pct')
+                            ->label('Gold Spread')
+                            ->helperText('ASK = BID × (1 + spread / 100). Default: 0.05%')
+                            ->numeric()
+                            ->minValue(0)
+                            ->maxValue(5)
+                            ->step(0.01)
+                            ->suffix('%'),
+                        TextInput::make('international_spread_silver_pct')
+                            ->label('Silver Spread')
+                            ->helperText('ASK = BID × (1 + spread / 100). Default: 0.1%')
+                            ->numeric()
+                            ->minValue(0)
+                            ->maxValue(5)
+                            ->step(0.01)
+                            ->suffix('%'),
                     ]),
             ])
             ->statePath('data');
@@ -104,6 +126,14 @@ class SiteSettings extends Page implements HasForms
 
         if (isset($data['site_name'])) {
             Setting::set('site_name', $data['site_name']);
+        }
+
+        if (array_key_exists('international_spread_gold_pct', $data)) {
+            Setting::set('international_spread_gold_pct', (float) $data['international_spread_gold_pct']);
+        }
+
+        if (array_key_exists('international_spread_silver_pct', $data)) {
+            Setting::set('international_spread_silver_pct', (float) $data['international_spread_silver_pct']);
         }
 
         Notification::make()

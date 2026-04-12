@@ -4,13 +4,14 @@ namespace App\Livewire;
 
 use App\Models\CurrencyRate;
 use App\Models\MetalPrice;
+use App\Models\Setting;
 use App\Services\PriceEngine\PriceCacheManager;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
 #[Layout('components.layouts.app')]
-#[Title('Live Gold & Silver Prices in Pakistan - PakGold Rates')]
+#[Title('Live Gold & Silver Prices in Pakistan - Islamabad Bullion Exchange')]
 class SpotPricePage extends Component
 {
     /**
@@ -71,11 +72,22 @@ class SpotPricePage extends Component
     public string $selectedUnit = 'tola';
 
     /**
+     * International gold ASK spread, as a percentage of BID (e.g. 0.05 = 0.05%).
+     * Loaded once in mount() from settings.
+     */
+    public float $goldSpreadPct = 0.05;
+
+    /**
+     * International silver ASK spread, as a percentage of BID (e.g. 0.1 = 0.1%).
+     * Loaded once in mount() from settings.
+     */
+    public float $silverSpreadPct = 0.1;
+
+    /**
      * Map of unit keys to display multiplier info.
      */
     private const UNIT_MAP = [
         'tola' => ['label' => '1 Tola', 'key' => 'tola'],
-        '10_tola' => ['label' => '10 Tola', 'key' => '10_tola'],
         '10_gram' => ['label' => '10 Gram', 'key' => '10_gram'],
         '5_gram' => ['label' => '5 Gram', 'key' => '5_gram'],
         'gram' => ['label' => '1 Gram', 'key' => 'gram'],
@@ -83,6 +95,8 @@ class SpotPricePage extends Component
 
     public function mount(): void
     {
+        $this->goldSpreadPct = (float) Setting::get('international_spread_gold_pct', 0.05);
+        $this->silverSpreadPct = (float) Setting::get('international_spread_silver_pct', 0.1);
         $this->loadPrices();
     }
 
@@ -273,6 +287,44 @@ class SpotPricePage extends Component
     public function getGoldPrice(string $karat, string $type = 'buy'): ?float
     {
         return $this->goldPrices[$karat][$this->selectedUnit][$type] ?? null;
+    }
+
+    /**
+     * International gold BID/ASK quote in USD/oz. ASK = BID * (1 + spread/100).
+     * Returns null if we don't have an upstream spot price to build on.
+     *
+     * @return array{bid: float, ask: float}|null
+     */
+    public function getGoldQuoteProperty(): ?array
+    {
+        $bid = $this->internationalRates['xau_usd'] ?? null;
+        if (!$bid) {
+            return null;
+        }
+
+        return [
+            'bid' => (float) $bid,
+            'ask' => (float) $bid * (1 + $this->goldSpreadPct / 100),
+        ];
+    }
+
+    /**
+     * International silver BID/ASK quote in USD/oz. ASK = BID * (1 + spread/100).
+     * Returns null if we don't have an upstream spot price to build on.
+     *
+     * @return array{bid: float, ask: float}|null
+     */
+    public function getSilverQuoteProperty(): ?array
+    {
+        $bid = $this->internationalRates['xag_usd'] ?? null;
+        if (!$bid) {
+            return null;
+        }
+
+        return [
+            'bid' => (float) $bid,
+            'ask' => (float) $bid * (1 + $this->silverSpreadPct / 100),
+        ];
     }
 
     public function render()
