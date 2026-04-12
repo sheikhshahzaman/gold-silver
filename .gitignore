@@ -13,7 +13,10 @@
 /.zed
 /auth.json
 /node_modules
-/public/build
+# /public/build  -- intentionally committed; Hostinger shared has no Node, so
+# we ship pre-built Vite assets through git. Regenerate before every commit
+# that changes resources/css/**, resources/js/**, or any blade file whose
+# Tailwind class usage changes, via `npm run build`.
 /public/hot
 /public/storage
 /storage/*.key

@@ -176,52 +176,34 @@ mv composer.phar ~/bin/composer   # adjust if ~/bin isn't on PATH
 
 ---
 
-## 7. Build the frontend assets (LOCAL + upload)
+## 7. Verify the frontend assets came through git
 
-Hostinger shared hosting does not have Node.js for arbitrary builds, so you
-build `public/build/` on your **local machine** and upload it.
+Hostinger shared hosting does not have Node.js, so this repo **commits the
+pre-built Vite output** (`public/build/`) directly to git. That means the
+`git clone` you just ran already pulled the CSS/JS bundles. No separate
+build or upload step is required on the server.
 
-**On your local machine** (not the server):
-
-```bash
-cd <local-path>/gold-website
-git pull origin main                  # get latest code
-npm install                            # install/refresh node deps
-npm run build                          # produces public/build/
-ls public/build/                       # should show manifest.json + assets/
-```
-
-`public/build/` is gitignored on purpose — we ship pre-built assets to
-production, not through git.
-
-**Upload `public/build/` to the server.** From your local machine:
+Verify:
 
 ```bash
-# rsync is the fastest; scp also works. Replace the placeholders.
-rsync -avz --delete \
-  -e "ssh -p <PORT>" \
-  public/build/ \
-  <USERNAME>@<IP>:~/gold-website/public/build/
+cd ~/gold-website
+ls public/build/
+# must show: assets/  manifest.json
+
+ls public/build/assets/
+# must show something like: app-<HASH>.css  app-<HASH>.js
 ```
 
-Or with scp (slower but works if rsync isn't installed):
+If `public/build/` is missing or empty, the clone failed or you are on an
+old branch. Run `git checkout main && git pull origin main` and check
+again.
 
-```bash
-scp -P <PORT> -r public/build <USERNAME>@<IP>:~/gold-website/public/
-```
-
-Or via hPanel File Manager:
-1. Zip `public/build/` locally → `build.zip`
-2. hPanel → **Files → File Manager** → navigate to `~/gold-website/public/`
-3. Upload `build.zip` → right-click → Extract → confirm path
-
-Verify on the server:
-
-```bash
-ssh -p <PORT> <USERNAME>@<IP>
-ls ~/gold-website/public/build/
-# should show: assets/  manifest.json
-```
+> **Developer note**: when making future changes to `resources/css/**`,
+> `resources/js/**`, or any blade/Tailwind-class edit that changes the
+> generated CSS bundle, run `npm run build` on your local machine
+> **before committing**. The CI-free flow is: `npm run build && git add
+> public/build && git commit`. Otherwise the deployed assets will lag
+> behind the code.
 
 ---
 
@@ -620,36 +602,31 @@ per minute. `Ctrl+C` to exit `tail`.
 
 ## 18. Deploying future updates
 
-After the initial deploy, any future code push follows this shortened
-flow. From your local machine:
+Because `public/build/` ships through git, future deploys are a single
+`git pull` on the server plus cache rewarm.
+
+**On your local machine**, before pushing any change that touches CSS,
+JS, or Tailwind-class usage:
 
 ```bash
 cd <local-path>/gold-website
+npm run build                # regenerate public/build/
+git add public/build         # stage the regenerated assets
+git add <your-other-changed-files>
+git commit -m "your message"
 git push origin main
-npm run build
 ```
 
-Then from SSH on the server:
+(If the change is pure PHP and doesn't affect styles, you can skip the
+`npm run build` step.)
+
+**Then from SSH on the server**:
 
 ```bash
 cd ~/gold-website
 git pull origin main
 composer install --no-dev --optimize-autoloader --no-interaction
 php artisan migrate --force
-```
-
-Upload the new `public/build/` from local:
-
-```bash
-# from local machine
-rsync -avz --delete -e "ssh -p <PORT>" public/build/ \
-  <USERNAME>@<IP>:~/gold-website/public/build/
-```
-
-Back on the server, re-warm caches:
-
-```bash
-cd ~/gold-website
 php artisan config:clear
 php artisan route:clear
 php artisan view:clear
@@ -659,8 +636,8 @@ php artisan view:cache
 php artisan filament:cache-components
 ```
 
-The site should now be running the latest code without a visible downtime
-window (the clear-then-cache sequence takes under a second).
+The site should now be running the latest code. The clear-then-cache
+sequence takes under a second, so there's no visible downtime window.
 
 ---
 
@@ -686,14 +663,25 @@ window (the clear-then-cache sequence takes under a second).
   `APP_DEBUG=true`, clear config (`php artisan config:clear`), reload,
   read the error, then **set it back to false**.
 
-### "Mix/Vite manifest not found" or broken CSS/JS
+### "Vite manifest not found" or broken CSS/JS
 
-- You forgot to upload `public/build/`, or the upload was incomplete.
+- The pre-built assets didn't come through the git clone for some reason.
   ```bash
   ls -la ~/gold-website/public/build/
   # must contain manifest.json and assets/
   ```
-- If missing, repeat step 7 (build locally, rsync up).
+- If empty or missing, force a clean pull:
+  ```bash
+  cd ~/gold-website
+  git fetch origin
+  git checkout main
+  git pull origin main
+  ls public/build/      # should now show manifest.json + assets/
+  ```
+- If `public/build/` is still missing after that, the developer may have
+  committed a code change without rebuilding. Ask them to run
+  `npm run build && git add public/build && git commit --amend` (or a new
+  commit) and push again.
 
 ### Images or logo upload not showing
 
@@ -775,7 +763,10 @@ php artisan filament:cache-components
 ## 20. Rollback plan
 
 If a deploy breaks production, roll back the git commit and re-warm
-caches. The MySQL data is unaffected.
+caches. Because `public/build/` is committed alongside source code in
+every deploy-ready commit, resetting to an older commit automatically
+also reverts to that commit's compiled assets. The MySQL data is
+unaffected.
 
 ```bash
 cd ~/gold-website
@@ -783,13 +774,6 @@ git log --oneline -5              # find the commit that worked
 git reset --hard <GOOD_COMMIT_SHA>
 composer install --no-dev --optimize-autoloader --no-interaction
 
-# Re-upload public/build/ from local if it changed
-# (from local machine, adjusted for the old commit)
-git checkout <GOOD_COMMIT_SHA>
-npm run build
-rsync -avz --delete -e "ssh -p <PORT>" public/build/ <USERNAME>@<IP>:~/gold-website/public/build/
-
-# Then on server:
 php artisan config:clear
 php artisan route:clear
 php artisan view:clear
@@ -838,7 +822,7 @@ Copy this into a task tracker and tick off as you go:
 - [ ] 4. Set `memory_limit=512M` and friends in PHP options
 - [ ] 5. `git clone` into `~/gold-website`
 - [ ] 6. `composer install --no-dev --optimize-autoloader`
-- [ ] 7. Build `public/build/` locally and rsync/upload to server
+- [ ] 7. Verify `public/build/` is present after clone (ships via git)
 - [ ] 8. `cp .env.example .env` + `php artisan key:generate --force`
 - [ ] 9. Fill DB_*, APP_URL, APP_DEBUG=false in `.env`
 - [ ] 10. Symlink `~/public_html` → `~/gold-website/public`
