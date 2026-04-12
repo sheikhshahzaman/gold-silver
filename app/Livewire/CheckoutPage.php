@@ -11,7 +11,7 @@ use Livewire\Component;
 use Livewire\WithFileUploads;
 
 #[Layout('components.layouts.app')]
-#[Title('Checkout - PakGold Rates')]
+#[Title('Checkout - Islamabad Bullion Exchange')]
 class CheckoutPage extends Component
 {
     use WithFileUploads;

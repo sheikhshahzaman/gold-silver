@@ -9,7 +9,7 @@ use Livewire\Attributes\Title;
 use Livewire\Component;
 
 #[Layout('components.layouts.app')]
-#[Title('Zakat Calculator - PakGold Rates')]
+#[Title('Zakat Calculator - Islamabad Bullion Exchange')]
 class ZakatCalculatorPage extends Component
 {
     /**

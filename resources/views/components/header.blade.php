@@ -7,7 +7,7 @@
             <a href="/" class="flex items-center gap-2.5 group">
                 @php
                     $siteLogo = \App\Models\Setting::get('site_logo');
-                    $siteName = \App\Models\Setting::get('site_name', 'PakGold Rates');
+                    $siteName = \App\Models\Setting::get('site_name', 'Islamabad Bullion Exchange');
                 @endphp
                 @if($siteLogo && Storage::disk('public')->exists($siteLogo))
                     <img src="{{ Storage::disk('public')->url($siteLogo) }}" alt="{{ $siteName }}" class="h-9 w-auto object-contain">

@@ -1,5 +1,5 @@
 @props([
-    'title' => 'PakGold Rates - Live Gold & Silver Prices in Pakistan',
+    'title' => 'Islamabad Bullion Exchange - Live Gold & Silver Prices in Pakistan',
     'description' => 'Get live gold, silver and currency rates in Pakistan. Trusted bullion exchange rates updated in real-time.',
     'url' => url()->current(),
 ])

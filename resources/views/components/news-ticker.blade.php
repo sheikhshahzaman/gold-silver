@@ -19,7 +19,7 @@
     if (empty($tickers)) {
         $tickers = [
             'Gold prices updated every 5 minutes throughout the trading day.',
-            'PakGold Rates provides the most accurate bullion prices in Pakistan.',
+            'Islamabad Bullion Exchange provides the most accurate bullion prices in Pakistan.',
             'Use our Zakat Calculator to determine your obligation on gold and silver holdings.',
             'Contact us for bulk buying and selling of gold and silver.',
         ];

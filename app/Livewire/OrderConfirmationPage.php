@@ -9,7 +9,7 @@ use Livewire\Attributes\Title;
 use Livewire\Component;
 
 #[Layout('components.layouts.app')]
-#[Title('Order Status - PakGold Rates')]
+#[Title('Order Status - Islamabad Bullion Exchange')]
 class OrderConfirmationPage extends Component
 {
     public Order $order;

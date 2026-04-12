@@ -1,4 +1,4 @@
-<x-layouts.app title="More - PakGold Rates">
+<x-layouts.app title="More - Islamabad Bullion Exchange">
     <div class="max-w-2xl mx-auto px-4 py-6">
         {{-- Header --}}
         <div class="mb-6">

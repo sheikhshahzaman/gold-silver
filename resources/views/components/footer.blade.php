@@ -8,7 +8,7 @@
                 <div class="flex items-center gap-2.5 mb-4">
                     @php
                         $footerLogo = \App\Models\Setting::get('site_logo');
-                        $footerSiteName = \App\Models\Setting::get('site_name', 'PakGold Rates');
+                        $footerSiteName = \App\Models\Setting::get('site_name', 'Islamabad Bullion Exchange');
                     @endphp
                     @if($footerLogo && Storage::disk('public')->exists($footerLogo))
                         <img src="{{ Storage::disk('public')->url($footerLogo) }}" alt="{{ $footerSiteName }}" class="h-9 w-auto object-contain">

@@ -14,7 +14,7 @@ class NewsTickerSeeder extends Seeder
     {
         $tickers = [
             [
-                'title' => 'Welcome to PakGold Rates - Your trusted source for real-time gold and silver prices in Pakistan.',
+                'title' => 'Welcome to Islamabad Bullion Exchange - Your trusted source for real-time gold and silver prices in Pakistan.',
                 'content' => 'Stay updated with the latest gold and silver rates across all karats including 24K, 22K, 21K, and 18K.',
                 'is_active' => true,
                 'sort_order' => 1,

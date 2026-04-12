@@ -11,7 +11,7 @@ use Livewire\Attributes\Title;
 use Livewire\Component;
 
 #[Layout('components.layouts.app')]
-#[Title('Sell Gold & Silver - PakGold Rates')]
+#[Title('Sell Gold & Silver - Islamabad Bullion Exchange')]
 class SellPage extends Component
 {
     /**

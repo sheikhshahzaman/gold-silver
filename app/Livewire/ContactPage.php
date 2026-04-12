@@ -9,7 +9,7 @@ use Livewire\Attributes\Title;
 use Livewire\Component;
 
 #[Layout('components.layouts.app')]
-#[Title('Contact Us - PakGold Rates')]
+#[Title('Contact Us - Islamabad Bullion Exchange')]
 class ContactPage extends Component
 {
     /**
