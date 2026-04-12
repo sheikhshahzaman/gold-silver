@@ -1,4 +1,4 @@
-<div wire:poll.15s="refresh">
+<div wire:poll.3s="refresh">
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
 
@@ -30,6 +30,10 @@
                         </tr>
                     </thead>
                     <tbody>
+                        @php
+                            $goldQuote = $this->goldQuote;
+                            $silverQuote = $this->silverQuote;
+                        @endphp
                         <tr class="border-b border-white/5 hover:bg-white/5 transition-colors">
                             <td class="py-3.5 px-3">
                                 <div class="flex items-center gap-2.5">
@@ -41,15 +45,15 @@
                                 </div>
                             </td>
                             <td class="text-right py-3.5 px-3">
-                                @if(!empty($internationalRates['xau_usd']))
-                                    <span class="text-gold font-bold text-base">${{ number_format($internationalRates['xau_usd'], 2) }}</span>
+                                @if($goldQuote)
+                                    <span class="text-gold font-bold text-base" data-price="{{ $goldQuote['bid'] }}" data-pkey="intl-xau-bid">${{ number_format($goldQuote['bid'], 2) }}</span>
                                 @else
                                     <span class="text-white/20">&mdash;</span>
                                 @endif
                             </td>
                             <td class="text-right py-3.5 px-3">
-                                @if(!empty($internationalRates['xau_usd']))
-                                    <span class="text-gold font-bold text-base">${{ number_format($internationalRates['xau_usd'] + 0.50, 2) }}</span>
+                                @if($goldQuote)
+                                    <span class="text-gold font-bold text-base" data-price="{{ $goldQuote['ask'] }}" data-pkey="intl-xau-ask">${{ number_format($goldQuote['ask'], 2) }}</span>
                                 @else
                                     <span class="text-white/20">&mdash;</span>
                                 @endif
@@ -66,15 +70,15 @@
                                 </div>
                             </td>
                             <td class="text-right py-3.5 px-3">
-                                @if(!empty($internationalRates['xag_usd']))
-                                    <span class="text-white font-bold text-base">${{ number_format($internationalRates['xag_usd'], 2) }}</span>
+                                @if($silverQuote)
+                                    <span class="text-white font-bold text-base" data-price="{{ $silverQuote['bid'] }}" data-pkey="intl-xag-bid">${{ number_format($silverQuote['bid'], 2) }}</span>
                                 @else
                                     <span class="text-white/20">&mdash;</span>
                                 @endif
                             </td>
                             <td class="text-right py-3.5 px-3">
-                                @if(!empty($internationalRates['xag_usd']))
-                                    <span class="text-white font-bold text-base">${{ number_format($internationalRates['xag_usd'] + 0.03, 2) }}</span>
+                                @if($silverQuote)
+                                    <span class="text-white font-bold text-base" data-price="{{ $silverQuote['ask'] }}" data-pkey="intl-xag-ask">${{ number_format($silverQuote['ask'], 2) }}</span>
                                 @else
                                     <span class="text-white/20">&mdash;</span>
                                 @endif
@@ -151,14 +155,14 @@
                                     </td>
                                     <td class="text-right py-3.5 px-3">
                                         @if($buyPrice !== null)
-                                            <span class="price-badge-buy">Rs {{ number_format($buyPrice) }}</span>
+                                            <span class="price-badge-buy" data-price="{{ $buyPrice }}" data-pkey="gold-{{ $karat }}-{{ $selectedUnit }}-buy">Rs {{ number_format($buyPrice) }}</span>
                                         @else
                                             <span style="color: #ccc;">&mdash;</span>
                                         @endif
                                     </td>
                                     <td class="text-right py-3.5 px-3">
                                         @if($sellPrice !== null)
-                                            <span class="price-badge-sell">Rs {{ number_format($sellPrice) }}</span>
+                                            <span class="price-badge-sell" data-price="{{ $sellPrice }}" data-pkey="gold-{{ $karat }}-{{ $selectedUnit }}-sell">Rs {{ number_format($sellPrice) }}</span>
                                         @else
                                             <span style="color: #ccc;">&mdash;</span>
                                         @endif
@@ -215,14 +219,14 @@
                                     </td>
                                     <td class="text-right py-3.5 px-3">
                                         @if($buyPrice !== null)
-                                            <span class="price-badge-buy">Rs {{ number_format($buyPrice) }}</span>
+                                            <span class="price-badge-buy" data-price="{{ $buyPrice }}" data-pkey="silver-{{ $unit }}-buy">Rs {{ number_format($buyPrice) }}</span>
                                         @else
                                             <span style="color: #ccc;">&mdash;</span>
                                         @endif
                                     </td>
                                     <td class="text-right py-3.5 px-3">
                                         @if($sellPrice !== null)
-                                            <span class="price-badge-sell">Rs {{ number_format($sellPrice) }}</span>
+                                            <span class="price-badge-sell" data-price="{{ $sellPrice }}" data-pkey="silver-{{ $unit }}-sell">Rs {{ number_format($sellPrice) }}</span>
                                         @else
                                             <span style="color: #ccc;">&mdash;</span>
                                         @endif
@@ -262,7 +266,7 @@
                     <div>
                         <p class="text-xs font-medium uppercase tracking-wider mb-1" style="color: #999;">International (USD/oz)</p>
                         @if(!empty($platinumRates['international']))
-                            <p class="text-2xl font-bold" style="color: #0A2E23;">${{ number_format($platinumRates['international'], 2) }}</p>
+                            <p class="text-2xl font-bold" style="color: #0A2E23;" data-price="{{ $platinumRates['international'] }}" data-pkey="platinum-intl">${{ number_format($platinumRates['international'], 2) }}</p>
                         @else
                             <p class="text-2xl font-bold" style="color: #ccc;">&mdash;</p>
                         @endif
@@ -270,7 +274,7 @@
                     <div style="border-top: 1px solid #F0E8DB; padding-top: 0.75rem;">
                         <p class="text-xs font-medium uppercase tracking-wider mb-1" style="color: #999;">Local (PKR/tola)</p>
                         @if(!empty($platinumRates['local']))
-                            <p class="text-2xl font-bold" style="color: #0A2E23;">Rs {{ number_format($platinumRates['local']) }}</p>
+                            <p class="text-2xl font-bold" style="color: #0A2E23;" data-price="{{ $platinumRates['local'] }}" data-pkey="platinum-local">Rs {{ number_format($platinumRates['local']) }}</p>
                         @else
                             <p class="text-2xl font-bold" style="color: #ccc;">&mdash;</p>
                         @endif
@@ -292,7 +296,7 @@
                     <div>
                         <p class="text-xs font-medium uppercase tracking-wider mb-1" style="color: #999;">International (USD/oz)</p>
                         @if(!empty($palladiumRates['international']))
-                            <p class="text-2xl font-bold" style="color: #0A2E23;">${{ number_format($palladiumRates['international'], 2) }}</p>
+                            <p class="text-2xl font-bold" style="color: #0A2E23;" data-price="{{ $palladiumRates['international'] }}" data-pkey="palladium-intl">${{ number_format($palladiumRates['international'], 2) }}</p>
                         @else
                             <p class="text-2xl font-bold" style="color: #ccc;">&mdash;</p>
                         @endif
@@ -300,7 +304,7 @@
                     <div style="border-top: 1px solid #F0E8DB; padding-top: 0.75rem;">
                         <p class="text-xs font-medium uppercase tracking-wider mb-1" style="color: #999;">Local (PKR/tola)</p>
                         @if(!empty($palladiumRates['local']))
-                            <p class="text-2xl font-bold" style="color: #0A2E23;">Rs {{ number_format($palladiumRates['local']) }}</p>
+                            <p class="text-2xl font-bold" style="color: #0A2E23;" data-price="{{ $palladiumRates['local'] }}" data-pkey="palladium-local">Rs {{ number_format($palladiumRates['local']) }}</p>
                         @else
                             <p class="text-2xl font-bold" style="color: #ccc;">&mdash;</p>
                         @endif
@@ -323,7 +327,7 @@
                     <div>
                         <p class="text-xs font-medium uppercase tracking-wider mb-1" style="color: #999;">Crude Oil (USD/barrel)</p>
                         @if(!empty($crudeOilPrice))
-                            <p class="text-2xl font-bold" style="color: #0A2E23;">${{ number_format($crudeOilPrice, 2) }}</p>
+                            <p class="text-2xl font-bold" style="color: #0A2E23;" data-price="{{ $crudeOilPrice }}" data-pkey="crude-oil">${{ number_format($crudeOilPrice, 2) }}</p>
                         @else
                             <p class="text-2xl font-bold" style="color: #ccc;">&mdash;</p>
                         @endif
@@ -333,7 +337,7 @@
                     <div style="border-top: 1px solid #F0E8DB; padding-top: 0.75rem;">
                         <p class="text-xs font-medium uppercase tracking-wider mb-1" style="color: #999;">PSX (KSE-100 Index)</p>
                         @if(!empty($psxData['index']))
-                            <p class="text-2xl font-bold" style="color: #0A2E23;">{{ number_format($psxData['index'], 2) }}</p>
+                            <p class="text-2xl font-bold" style="color: #0A2E23;" data-price="{{ $psxData['index'] }}" data-pkey="psx-index">{{ number_format($psxData['index'], 2) }}</p>
                             <div class="flex items-center gap-3 mt-1">
                                 @php
                                     $psxChange = $psxData['change'] ?? 0;
@@ -412,14 +416,14 @@
                                 </td>
                                 <td class="text-right py-3.5 px-3">
                                     @if($buyRate !== null && $buyRate > 0)
-                                        <span class="price-badge-buy">Rs {{ number_format($buyRate, 2) }}</span>
+                                        <span class="price-badge-buy" data-price="{{ $buyRate }}" data-pkey="currency-{{ $key }}-buy">Rs {{ number_format($buyRate, 2) }}</span>
                                     @else
                                         <span style="color: #ccc;">&mdash;</span>
                                     @endif
                                 </td>
                                 <td class="text-right py-3.5 px-3">
                                     @if($sellRate !== null && $sellRate > 0)
-                                        <span class="price-badge-sell">Rs {{ number_format($sellRate, 2) }}</span>
+                                        <span class="price-badge-sell" data-price="{{ $sellRate }}" data-pkey="currency-{{ $key }}-sell">Rs {{ number_format($sellRate, 2) }}</span>
                                     @else
                                         <span style="color: #ccc;">&mdash;</span>
                                     @endif

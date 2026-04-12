@@ -104,7 +104,7 @@ php artisan filament:cache-components
 1. In hPanel → **Advanced → Cron Jobs**
 2. Add a new cron job:
    - Command: `cd ~/gold-website && php artisan schedule:run >> /dev/null 2>&1`
-   - Interval: **Every minute** (or every 5 minutes)
+   - Interval: **Every minute** — the schedule expression must be `* * * * *`. The scheduler in `routes/console.php` dispatches `prices:fetch` every minute with a 55-second overlap lock, so anything slower defeats the real-time feel.
 
 ## Step 11: Set Up Laravel Scheduler
 
@@ -113,7 +113,7 @@ The price fetcher runs via Laravel's scheduler. Make sure `routes/console.php` h
 ```
 cd ~/gold-website && php artisan prices:fetch >> /dev/null 2>&1
 ```
-Set this to run every 5 minutes.
+Set this to run every minute (`* * * * *`).
 
 ## Step 12: Force HTTPS (if not automatic)
 
