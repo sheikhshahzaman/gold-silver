@@ -61,9 +61,36 @@ class BuyPage extends Component
      */
     public array $silverPrices = [];
 
+    /**
+     * Product name passed via query string (for display).
+     */
+    public string $productName = '';
+
     public function mount(): void
     {
         $this->loadPrices();
+
+        // Pre-select from query parameters (when coming from a product link)
+        $metal = request()->query('metal');
+        $karat = request()->query('karat');
+        $unit = request()->query('unit');
+        $this->productName = request()->query('product', '');
+
+        if ($metal && in_array($metal, ['gold', 'silver'])) {
+            $this->selectedMetal = $metal;
+        }
+        if ($karat) {
+            $this->selectedKarat = strtolower($karat);
+        }
+        if ($unit) {
+            $this->selectedUnit = $unit;
+        }
+
+        // If product info was passed, skip to step 2
+        if ($metal) {
+            $this->step = 2;
+        }
+
         $this->calculatePrice();
     }
 
