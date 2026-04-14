@@ -29,6 +29,11 @@ class ContactPage extends Component
     public string $hoursSun = '';
 
     /**
+     * Map embed URL from settings.
+     */
+    public string $mapEmbedUrl = '';
+
+    /**
      * Contact form fields.
      */
     public string $formName = '';
@@ -53,6 +58,11 @@ class ContactPage extends Component
         $this->hoursFri = Setting::get('hours_fri', '2:30 PM - 8:00 PM');
         $this->hoursSat = Setting::get('hours_sat', '10:00 AM - 8:00 PM');
         $this->hoursSun = Setting::get('hours_sun', 'Closed');
+
+        $this->mapEmbedUrl = Setting::get('map_embed_url', '');
+
+        // Pre-fill subject from query string (product enquiry)
+        $this->formSubject = request()->query('subject', '');
     }
 
     /**
