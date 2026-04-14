@@ -3,7 +3,9 @@
 use App\Livewire\BuyPage;
 use App\Livewire\CheckoutPage;
 use App\Livewire\ContactPage;
+use App\Livewire\HomePage;
 use App\Livewire\OrderConfirmationPage;
+use App\Livewire\ProductsPage;
 use App\Livewire\SellPage;
 use App\Livewire\SpotPricePage;
 use App\Livewire\ZakatCalculatorPage;
@@ -16,7 +18,9 @@ use Illuminate\Support\Facades\Route;
 */
 
 // Main pages
-Route::get('/', SpotPricePage::class)->name('home');
+Route::get('/', HomePage::class)->name('home');
+Route::get('/live', SpotPricePage::class)->name('live');
+Route::get('/products', ProductsPage::class)->name('products');
 Route::get('/buy', BuyPage::class)->name('buy');
 Route::get('/sell', SellPage::class)->name('sell');
 Route::get('/contact', ContactPage::class)->name('contact');
