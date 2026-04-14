@@ -1,4 +1,4 @@
-<div wire:poll.3s="refresh">
+<div>
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
 
@@ -88,12 +88,6 @@
                 </table>
             </div>
 
-            @if($lastUpdated)
-                <div class="mt-4 pt-3 border-t border-white/10 flex items-center gap-1.5 text-xs text-white/30">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>
-                    Updated {{ \Carbon\Carbon::parse($lastUpdated)->diffForHumans() }}
-                </div>
-            @endif
         </section>
 
         {{-- ============================================================== --}}
@@ -177,12 +171,7 @@
                     Prices calculated for {{ $this->selectedUnitLabel }} quantity
                 </p>
 
-                @if($lastUpdated)
-                    <div class="mt-3 pt-3 flex items-center gap-1.5 text-xs" style="border-top: 1px solid #F0E8DB; color: #999;">
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>
-                        Updated {{ \Carbon\Carbon::parse($lastUpdated)->diffForHumans() }}
-                    </div>
-                @endif
+                {{-- updated timestamp removed --}}
             </section>
 
             {{-- Section C: Silver Rates (PKR) - LIGHT CARD --}}
@@ -237,12 +226,7 @@
                     </table>
                 </div>
 
-                @if($lastUpdated)
-                    <div class="mt-4 pt-3 flex items-center gap-1.5 text-xs" style="border-top: 1px solid #F0E8DB; color: #999;">
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>
-                        Updated {{ \Carbon\Carbon::parse($lastUpdated)->diffForHumans() }}
-                    </div>
-                @endif
+                {{-- updated timestamp removed --}}
             </section>
 
         </div>
@@ -434,12 +418,7 @@
                 </table>
             </div>
 
-            @if($lastUpdated)
-                <div class="mt-4 pt-3 flex items-center gap-1.5 text-xs" style="border-top: 1px solid rgba(198, 150, 60, 0.15); color: #999;">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>
-                    Updated {{ \Carbon\Carbon::parse($lastUpdated)->diffForHumans() }}
-                </div>
-            @endif
+            {{-- updated timestamp removed --}}
         </section>
 
     </div>
