@@ -3,6 +3,7 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\ProductResource\Pages;
+use App\Filament\Resources\ProductResource\RelationManagers\InventoryItemsRelationManager;
 use App\Models\Product;
 use App\Models\ProductCategory;
 use Filament\Forms\Components\DateTimePicker;
@@ -156,6 +157,11 @@ class ProductResource extends Resource
                 }),
                 Tables\Columns\TextColumn::make('fixed_price')->money('PKR')->label('Price')
                     ->visible(fn ($record) => $record?->price_type === 'fixed'),
+                Tables\Columns\TextColumn::make('stock_count')
+                    ->label('Stock')
+                    ->getStateUsing(fn ($record) => $record->stock_count)
+                    ->badge()
+                    ->color(fn ($state) => $state > 0 ? 'success' : 'gray'),
                 Tables\Columns\IconColumn::make('is_active')->boolean(),
                 Tables\Columns\TextColumn::make('sort_order')->sortable(),
             ])
@@ -170,6 +176,13 @@ class ProductResource extends Resource
             ])
             ->actions([EditAction::make(), DeleteAction::make()])
             ->bulkActions([BulkActionGroup::make([DeleteBulkAction::make()])]);
+    }
+
+    public static function getRelations(): array
+    {
+        return [
+            InventoryItemsRelationManager::class,
+        ];
     }
 
     public static function getPages(): array

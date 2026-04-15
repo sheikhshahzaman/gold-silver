@@ -8,6 +8,7 @@ use App\Livewire\OrderConfirmationPage;
 use App\Livewire\ProductsPage;
 use App\Livewire\SellPage;
 use App\Livewire\SpotPricePage;
+use App\Livewire\VerifyItemPage;
 use App\Livewire\ZakatCalculatorPage;
 use Illuminate\Support\Facades\Route;
 
@@ -27,14 +28,11 @@ Route::get('/contact', ContactPage::class)->name('contact');
 Route::get('/zakat-calculator', ZakatCalculatorPage::class)->name('zakat');
 Route::get('/checkout/{orderNumber}', CheckoutPage::class)->name('checkout');
 Route::get('/order/{orderNumber}', OrderConfirmationPage::class)->name('order.show');
+Route::get('/verify/{token}', VerifyItemPage::class)->name('verify');
 Route::get('/more', fn () => view('pages.more'))->name('more');
 
-// Static/dynamic pages loaded from the Page model
-$staticPageSlugs = ['about-us', 'disclaimer', 'privacy-policy', 'terms-and-conditions'];
-
-foreach ($staticPageSlugs as $slug) {
-    Route::get("/{$slug}", function () use ($slug) {
-        $page = \App\Models\Page::where('slug', $slug)->firstOrFail();
-        return view('pages.show', compact('page'));
-    })->name("page.{$slug}");
-}
+// Static pages with dedicated templates
+Route::get('/about-us', fn () => view('pages.about-us'))->name('page.about-us');
+Route::get('/disclaimer', fn () => view('pages.disclaimer'))->name('page.disclaimer');
+Route::get('/privacy-policy', fn () => view('pages.privacy-policy'))->name('page.privacy-policy');
+Route::get('/terms-and-conditions', fn () => view('pages.terms-and-conditions'))->name('page.terms-and-conditions');
