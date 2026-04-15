@@ -40,6 +40,7 @@
                         ['href' => '/', 'label' => 'Home'],
                         ['href' => '/buy', 'label' => 'Buy Gold & Silver'],
                         ['href' => '/sell', 'label' => 'Sell Gold & Silver'],
+                        ['href' => '/products', 'label' => 'Products'],
                         ['href' => '/zakat-calculator', 'label' => 'Zakat Calculator'],
                         ['href' => '/contact', 'label' => 'Contact Us'],
                     ] as $link)

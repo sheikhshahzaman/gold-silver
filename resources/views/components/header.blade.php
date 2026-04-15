@@ -34,7 +34,7 @@
                         ['route' => 'home', 'href' => '/', 'label' => 'Home'],
                         ['route' => 'buy', 'href' => '/buy', 'label' => 'Buy Gold'],
                         ['route' => 'sell', 'href' => '/sell', 'label' => 'Sell Gold'],
-                        ['route' => 'zakat', 'href' => '/zakat-calculator', 'label' => 'Zakat Calculator'],
+                        ['route' => 'page.about-us', 'href' => '/about-us', 'label' => 'About Us'],
                         ['route' => 'contact', 'href' => '/contact', 'label' => 'Contact'],
                     ];
                 @endphp
