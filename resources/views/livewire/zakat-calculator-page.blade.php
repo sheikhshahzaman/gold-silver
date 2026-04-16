@@ -180,6 +180,49 @@
     <div class="max-w-2xl mx-auto px-4 py-6 space-y-5">
 
         {{-- ============================================= --}}
+        {{-- SECTION 0: LIVE RATES                         --}}
+        {{-- ============================================= --}}
+        <div style="background: #FFFFFF; border: 1px solid #E8DFD0; border-radius: 16px; overflow: hidden; box-shadow: 0 1px 3px rgba(10, 46, 35, 0.04);">
+            <div style="border-bottom: 1px solid #E8DFD0; padding: 16px 20px; background: linear-gradient(135deg, rgba(201, 168, 76, 0.04), transparent);">
+                <h2 class="text-base font-semibold flex items-center gap-2.5" style="color: #0A2E23;">
+                    <span class="flex items-center justify-center" style="width: 32px; height: 32px; background: rgba(201, 168, 76, 0.12); border-radius: 8px;">
+                        <svg class="w-4.5 h-4.5" style="color: #C9A84C;" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18L9 11.25l4.306 4.306a11.95 11.95 0 015.814-5.518l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941" />
+                        </svg>
+                    </span>
+                    Live Rates
+                    <span class="ml-auto inline-flex items-center gap-1.5 text-[10px] font-medium" style="color: #0A7A3E;">
+                        <span class="live-dot"></span>
+                        Live
+                    </span>
+                </h2>
+            </div>
+            <div style="padding: 16px 20px;">
+                <div class="grid grid-cols-2 gap-2 text-xs">
+                    <div class="flex justify-between items-center py-2 px-3" style="background: #FAF6EE; border-radius: 8px;">
+                        <span style="color: #7A7060;">Gold 24K / gram</span>
+                        <span class="font-bold" style="color: #C9A84C;" x-text="formatPkr(getGoldPricePerGram('24k'))"></span>
+                    </div>
+                    <div class="flex justify-between items-center py-2 px-3" style="background: #FAF6EE; border-radius: 8px;">
+                        <span style="color: #7A7060;">Gold 22K / gram</span>
+                        <span class="font-bold" style="color: #C9A84C;" x-text="formatPkr(getGoldPricePerGram('22k'))"></span>
+                    </div>
+                    <div class="flex justify-between items-center py-2 px-3" style="background: #FAF6EE; border-radius: 8px;">
+                        <span style="color: #7A7060;">Gold 21K / gram</span>
+                        <span class="font-bold" style="color: #C9A84C;" x-text="formatPkr(getGoldPricePerGram('21k'))"></span>
+                    </div>
+                    <div class="flex justify-between items-center py-2 px-3" style="background: #FAF6EE; border-radius: 8px;">
+                        <span style="color: #7A7060;">Silver / gram</span>
+                        <span class="font-bold" style="color: #6B7280;" x-text="formatPkr(getSilverPricePerGram())"></span>
+                    </div>
+                </div>
+                <p class="text-[11px] mt-3 text-center" style="color: #999;">
+                    Rates update automatically based on <span x-text="priceBasis === 'sell' ? 'Sell' : 'Buy'" class="font-semibold"></span> price selection
+                </p>
+            </div>
+        </div>
+
+        {{-- ============================================= --}}
         {{-- SECTION 1: SETTINGS                           --}}
         {{-- ============================================= --}}
         <div style="background: #FFFFFF; border: 1px solid #E8DFD0; border-radius: 16px; overflow: hidden; box-shadow: 0 1px 3px rgba(10, 46, 35, 0.04);">
@@ -368,9 +411,14 @@
                             </div>
                         </div>
 
-                        {{-- Amount input --}}
+                        {{-- Amount input with current rate --}}
                         <div style="margin-bottom: 14px;">
-                            <label class="block text-xs font-medium mb-1.5" style="color: #7A7060;">Amount</label>
+                            <div class="flex items-center justify-between mb-1.5">
+                                <label class="block text-xs font-medium" style="color: #7A7060;">Amount</label>
+                                <span class="text-[11px] font-medium" style="color: #C9A84C;">
+                                    Rate: <span x-text="formatPkr(getGoldPricePerGram(entry.category) * getUnitMultiplier(entry.unit))"></span> / <span x-text="entry.unit === 'kg' ? 'kg' : entry.unit"></span>
+                                </span>
+                            </div>
                             <input type="number"
                                    x-model.number="entry.amount"
                                    placeholder="Enter gold amount"
@@ -451,9 +499,14 @@
                             </div>
                         </div>
 
-                        {{-- Amount input --}}
+                        {{-- Amount input with current rate --}}
                         <div style="margin-bottom: 14px;">
-                            <label class="block text-xs font-medium mb-1.5" style="color: #7A7060;">Amount</label>
+                            <div class="flex items-center justify-between mb-1.5">
+                                <label class="block text-xs font-medium" style="color: #7A7060;">Amount</label>
+                                <span class="text-[11px] font-medium" style="color: #6B7280;">
+                                    Rate: <span x-text="formatPkr(getSilverPricePerGram() * getUnitMultiplier(entry.unit))"></span> / <span x-text="entry.unit === 'kg' ? 'kg' : entry.unit"></span>
+                                </span>
+                            </div>
                             <input type="number"
                                    x-model.number="entry.amount"
                                    placeholder="Enter silver amount"
