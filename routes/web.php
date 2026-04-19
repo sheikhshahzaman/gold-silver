@@ -6,6 +6,7 @@ use App\Livewire\ContactPage;
 use App\Livewire\HomePage;
 use App\Livewire\OrderConfirmationPage;
 use App\Livewire\ProductsPage;
+use App\Livewire\ScanQrPage;
 use App\Livewire\SellPage;
 use App\Livewire\SpotPricePage;
 use App\Livewire\VerifyItemPage;
@@ -28,6 +29,7 @@ Route::get('/contact', ContactPage::class)->name('contact');
 Route::get('/zakat-calculator', ZakatCalculatorPage::class)->name('zakat');
 Route::get('/checkout/{orderNumber}', CheckoutPage::class)->name('checkout');
 Route::get('/order/{orderNumber}', OrderConfirmationPage::class)->name('order.show');
+Route::get('/scan', ScanQrPage::class)->name('scan');
 Route::get('/verify/{token}', VerifyItemPage::class)->name('verify');
 Route::get('/more', fn () => view('pages.more'))->name('more');
 
