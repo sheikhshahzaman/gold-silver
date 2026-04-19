@@ -28,11 +28,11 @@
         {{-- Scanner Card --}}
         <div class="relative rounded-3xl p-1 mb-6"
              style="background: linear-gradient(135deg, rgba(201,168,76,0.6), rgba(232,201,106,0.1) 40%, rgba(201,168,76,0.3) 80%, rgba(232,201,106,0.6));">
-            <div class="rounded-[22px] overflow-hidden" style="background: #0A2E23;">
+            <div x-data="qrScanner" class="rounded-[22px] overflow-hidden" style="background: #0A2E23;">
 
                 {{-- Scanner Viewport --}}
-                <div x-data="qrScanner()" x-init="init()" class="relative">
-                    <div id="qr-reader" class="w-full aspect-square md:aspect-video bg-black relative overflow-hidden"></div>
+                <div class="relative" style="min-height: 360px;">
+                    <div id="qr-reader" class="w-full bg-black relative overflow-hidden" style="min-height: 360px; aspect-ratio: 1 / 1;"></div>
 
                     {{-- Animated scanning overlay --}}
                     <div class="absolute inset-0 pointer-events-none flex items-center justify-center"
@@ -161,11 +161,15 @@
 
     {{-- Styles & Scripts --}}
     <style>
+        #qr-reader { display: block; }
         #qr-reader video { width: 100% !important; height: 100% !important; object-fit: cover; }
-        #qr-reader__scan_region { background: transparent !important; border: none !important; }
+        #qr-reader__scan_region { background: transparent !important; border: none !important; min-height: 360px; }
         #qr-reader__dashboard, #qr-reader__header_message, #qr-reader__dashboard_section_csr { display: none !important; }
         #qr-reader__camera_selection { display: none !important; }
         [x-cloak] { display: none !important; }
+        @media (min-width: 768px) {
+            #qr-reader, #qr-reader > div { aspect-ratio: 16 / 9 !important; }
+        }
 
         @keyframes scanner-laser-move {
             0%   { top: 10%; opacity: 0; }
@@ -192,110 +196,148 @@
 
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <script>
-        function qrScanner() {
-            return {
-                scanning: false,
-                success: false,
-                error: false,
-                errorMessage: '',
-                html5QrCode: null,
-                cameraId: null,
-                cameras: [],
-                hasMultipleCameras: false,
-                currentCameraIndex: 0,
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('qrScanner', () => ({
+            scanning: false,
+            success: false,
+            error: false,
+            errorMessage: '',
+            html5QrCode: null,
+            facingMode: 'environment',
+            hasMultipleCameras: true,
 
-                init() {
-                    // Auto-start if browser supports it
-                    this.$nextTick(() => {
-                        setTimeout(() => this.startScan(), 300);
-                    });
-                },
+            init() {
+                if (!window.isSecureContext && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+                    this.error = true;
+                    this.errorMessage = 'Camera requires a secure (HTTPS) connection. Please open this page over HTTPS.';
+                }
+            },
 
-                async startScan() {
-                    this.error = false;
-                    this.success = false;
-                    try {
-                        if (!window.Html5Qrcode) {
-                            throw new Error('Scanner library not loaded. Please refresh the page.');
-                        }
+            async startScan() {
+                this.error = false;
+                this.success = false;
+                this.errorMessage = '';
 
-                        const cameras = await Html5Qrcode.getCameras();
-                        if (!cameras || cameras.length === 0) {
-                            throw new Error('No camera found on this device.');
-                        }
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    this.error = true;
+                    this.errorMessage = 'Your browser does not support camera access. Try Chrome, Safari, or Firefox.';
+                    return;
+                }
 
-                        this.cameras = cameras;
-                        this.hasMultipleCameras = cameras.length > 1;
+                if (!window.Html5Qrcode) {
+                    this.error = true;
+                    this.errorMessage = 'Scanner library did not load. Please check your connection and refresh.';
+                    return;
+                }
 
-                        // Prefer back camera
-                        const back = cameras.find(c => /back|rear|environment/i.test(c.label));
-                        this.cameraId = back ? back.id : cameras[cameras.length - 1].id;
-                        this.currentCameraIndex = cameras.findIndex(c => c.id === this.cameraId);
-
-                        this.html5QrCode = new Html5Qrcode('qr-reader');
-                        await this.html5QrCode.start(
-                            this.cameraId,
-                            { fps: 10, qrbox: { width: 260, height: 260 }, aspectRatio: 1.0 },
-                            (decodedText) => this.onDecoded(decodedText),
-                            () => { /* ignore per-frame errors */ }
-                        );
-                        this.scanning = true;
-                    } catch (e) {
-                        this.error = true;
-                        this.errorMessage = e.message || 'Unable to access camera. Please allow camera permissions and try again.';
-                    }
-                },
-
-                async stopScan() {
-                    if (this.html5QrCode && this.scanning) {
+                try {
+                    if (this.html5QrCode) {
                         try { await this.html5QrCode.stop(); } catch (_) {}
                         try { await this.html5QrCode.clear(); } catch (_) {}
                     }
-                    this.scanning = false;
-                },
+                    this.html5QrCode = new Html5Qrcode('qr-reader', { verbose: false });
+                } catch (_) {
+                    this.html5QrCode = new Html5Qrcode('qr-reader');
+                }
 
-                async flipCamera() {
-                    if (!this.hasMultipleCameras) return;
-                    await this.stopScan();
-                    this.currentCameraIndex = (this.currentCameraIndex + 1) % this.cameras.length;
-                    this.cameraId = this.cameras[this.currentCameraIndex].id;
+                const config = {
+                    fps: 10,
+                    qrbox: (viewfinderWidth, viewfinderHeight) => {
+                        const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+                        const size = Math.floor(minEdge * 0.7);
+                        return { width: size, height: size };
+                    },
+                };
+
+                const attempts = [
+                    { facingMode: { exact: this.facingMode } },
+                    { facingMode: this.facingMode },
+                ];
+
+                // Fallback — enumerate cameras and try each by ID
+                try {
+                    const cameras = await Html5Qrcode.getCameras();
+                    if (cameras && cameras.length) {
+                        // Prefer back camera by label, else last camera (usually back on mobile)
+                        const back = cameras.find(c => /back|rear|environment/i.test(c.label));
+                        const preferred = back ? back.id : cameras[cameras.length - 1].id;
+                        attempts.push(preferred);
+                        for (const c of cameras) {
+                            if (c.id !== preferred) attempts.push(c.id);
+                        }
+                    }
+                } catch (_) { /* enumerate failed — continue with facingMode attempts */ }
+
+                let started = false;
+                let lastError = null;
+
+                for (const constraint of attempts) {
                     try {
-                        this.html5QrCode = new Html5Qrcode('qr-reader');
                         await this.html5QrCode.start(
-                            this.cameraId,
-                            { fps: 10, qrbox: { width: 260, height: 260 }, aspectRatio: 1.0 },
+                            constraint,
+                            config,
                             (decodedText) => this.onDecoded(decodedText),
                             () => {}
                         );
-                        this.scanning = true;
+                        started = true;
+                        break;
                     } catch (e) {
-                        this.error = true;
-                        this.errorMessage = e.message;
+                        lastError = e;
                     }
-                },
+                }
 
-                async retry() {
-                    this.error = false;
-                    await this.startScan();
-                },
+                if (!started) {
+                    this.error = true;
+                    const msg = (lastError && (lastError.message || lastError.toString())) || 'Could not start camera.';
+                    if (/permission|notallowed|denied/i.test(msg)) {
+                        this.errorMessage = 'Camera permission was denied. Allow camera access in your browser settings and tap Try Again.';
+                    } else if (/notfound|devicesnotfound/i.test(msg)) {
+                        this.errorMessage = 'No camera found on this device.';
+                    } else if (/notreadable|in use|could not start/i.test(msg)) {
+                        this.errorMessage = 'The camera is in use by another app. Close other apps/tabs using the camera and try again.';
+                    } else {
+                        this.errorMessage = msg;
+                    }
+                    return;
+                }
 
-                onDecoded(text) {
-                    if (this.success) return;
-                    this.success = true;
-                    this.stopScan();
-                    // Redirect — accept either full URL or plain token
-                    setTimeout(() => {
-                        try {
-                            const url = new URL(text);
-                            window.location.href = url.href;
-                        } catch {
-                            // Treat as plain token
-                            const token = text.trim();
-                            window.location.href = '/verify/' + encodeURIComponent(token);
-                        }
-                    }, 900);
-                },
-            }
-        }
+                this.scanning = true;
+            },
+
+            async stopScan() {
+                if (this.html5QrCode) {
+                    try { await this.html5QrCode.stop(); } catch (_) {}
+                    try { await this.html5QrCode.clear(); } catch (_) {}
+                }
+                this.scanning = false;
+            },
+
+            async flipCamera() {
+                this.facingMode = this.facingMode === 'environment' ? 'user' : 'environment';
+                await this.stopScan();
+                await this.startScan();
+            },
+
+            async retry() {
+                this.error = false;
+                await this.startScan();
+            },
+
+            onDecoded(text) {
+                if (this.success) return;
+                this.success = true;
+                this.stopScan();
+                setTimeout(() => {
+                    try {
+                        const url = new URL(text);
+                        window.location.href = url.href;
+                    } catch {
+                        const token = text.trim();
+                        window.location.href = '/verify/' + encodeURIComponent(token);
+                    }
+                }, 900);
+            },
+            }));
+        });
     </script>
 </div>
