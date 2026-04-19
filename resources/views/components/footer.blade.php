@@ -42,6 +42,8 @@
                         ['href' => '/sell', 'label' => 'Sell Gold & Silver'],
                         ['href' => '/products', 'label' => 'Products'],
                         ['href' => '/zakat-calculator', 'label' => 'Zakat Calculator'],
+                        ['href' => '/scan', 'label' => 'Scan QR Code'],
+                        ['href' => '/verify', 'label' => 'Verify Serial Number'],
                         ['href' => '/contact', 'label' => 'Contact Us'],
                     ] as $link)
                         <a href="{{ $link['href'] }}" class="block text-xs transition-colors hover:text-gold-light" style="color: rgba(255,255,255,0.4);">{{ $link['label'] }}</a>
