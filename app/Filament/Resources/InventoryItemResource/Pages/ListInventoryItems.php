@@ -5,11 +5,13 @@ namespace App\Filament\Resources\InventoryItemResource\Pages;
 use App\Filament\Resources\InventoryItemResource;
 use App\Models\InventoryItem;
 use App\Models\Product;
+use App\Services\QrPdfGenerator;
 use Filament\Actions;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
+use Illuminate\Database\Eloquent\Collection;
 
 class ListInventoryItems extends ListRecords
 {
@@ -40,16 +42,25 @@ class ListInventoryItems extends ListRecords
                     $count = (int) $data['count'];
                     $productId = $data['product_id'];
 
+                    $created = new Collection();
                     for ($i = 0; $i < $count; $i++) {
-                        InventoryItem::create([
+                        $created->push(InventoryItem::create([
                             'product_id' => $productId,
-                        ]);
+                        ]));
                     }
 
                     Notification::make()
                         ->title("Generated {$count} inventory item(s) with QR codes")
+                        ->body('Downloading printable QR sheet…')
                         ->success()
                         ->send();
+
+                    $pdf = (new QrPdfGenerator())->generate($created);
+
+                    return response()->streamDownload(
+                        fn () => print($pdf->output()),
+                        'qr-codes-batch-' . now()->format('Y-m-d-His') . '.pdf',
+                    );
                 }),
 
             Actions\CreateAction::make(),

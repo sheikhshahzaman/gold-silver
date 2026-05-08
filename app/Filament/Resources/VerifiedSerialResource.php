@@ -35,6 +35,8 @@ class VerifiedSerialResource extends Resource
                         ->maxLength(80)
                         ->placeholder('IBE-MASTER-2026')
                         ->helperText('Stored in uppercase. Customers must enter this exactly to verify.')
+                        ->formatStateUsing(fn (?string $state): ?string => $state !== null ? strtoupper(trim($state)) : null)
+                        ->dehydrateStateUsing(fn (?string $state): string => strtoupper(trim((string) $state)))
                         ->unique(ignoreRecord: true),
                     Toggle::make('is_active')
                         ->label('Active')

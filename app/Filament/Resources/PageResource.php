@@ -42,7 +42,11 @@ class PageResource extends Resource
                             ->required()
                             ->maxLength(255)
                             ->live(onBlur: true)
-                            ->afterStateUpdated(fn (Set $set, ?string $state) => $set('slug', Str::slug($state ?? ''))),
+                            ->afterStateUpdated(function (Set $set, ?string $state, string $operation) {
+                                if ($operation === 'create') {
+                                    $set('slug', Str::slug($state ?? ''));
+                                }
+                            }),
                         TextInput::make('slug')
                             ->required()
                             ->maxLength(255)

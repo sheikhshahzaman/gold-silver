@@ -512,7 +512,7 @@
                             <span class="text-base mt-0.5">{{ $item['icon'] }}</span>
                             <div>
                                 <div class="text-xs font-medium" style="color: #1A1A1A;">{{ $item['label'] }}</div>
-                                <div class="text-[13px] leading-relaxed" style="color: #6B6B6B;">{!! $item['text'] !!}</div>
+                                <div class="text-[13px] leading-relaxed" style="color: #6B6B6B;">{{ $item['text'] }}</div>
                             </div>
                         </div>
                     @endforeach

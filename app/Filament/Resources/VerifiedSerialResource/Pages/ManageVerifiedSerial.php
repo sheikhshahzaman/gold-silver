@@ -14,13 +14,19 @@ class ManageVerifiedSerial extends EditRecord
 
     public function mount(int | string $record = null): void
     {
-        $singleton = VerifiedSerial::first() ?? VerifiedSerial::create([
-            'serial_number' => 'IBE-MASTER-' . now()->year,
-            'is_active' => false,
-            'label' => 'Default — please update',
-        ]);
+        $existing = VerifiedSerial::first();
 
-        parent::mount($singleton->getKey());
+        if (! $existing) {
+            $existing = VerifiedSerial::firstOrCreate(
+                ['serial_number' => 'IBE-MASTER-' . now()->year],
+                [
+                    'is_active' => false,
+                    'label' => 'Default — please update',
+                ],
+            );
+        }
+
+        parent::mount($existing->getKey());
     }
 
     public function getBreadcrumb(): string

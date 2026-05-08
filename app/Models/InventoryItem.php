@@ -32,18 +32,22 @@ class InventoryItem extends Model
             }
 
             if (empty($item->serial_number)) {
-                $item->serial_number = static::generateSerialNumber($item);
+                $item->serial_number = 'IBE-PENDING-' . substr($item->verification_token, 0, 16);
             }
         });
 
         static::created(function (InventoryItem $item) {
+            if (str_starts_with($item->serial_number, 'IBE-PENDING-')) {
+                $item->updateQuietly(['serial_number' => static::buildSerialNumber($item)]);
+            }
+
             if (empty($item->qr_code_path)) {
                 $item->generateQrCode();
             }
         });
     }
 
-    public static function generateSerialNumber(InventoryItem $item): string
+    public static function buildSerialNumber(InventoryItem $item): string
     {
         $product = $item->product ?? Product::find($item->product_id);
 
@@ -55,10 +59,7 @@ class InventoryItem extends Model
             default => 'G24K',
         };
 
-        $lastId = static::max('id') ?? 0;
-        $nextId = $lastId + 1;
-
-        return 'IBE-' . $metalCode . '-' . str_pad($nextId, 6, '0', STR_PAD_LEFT);
+        return 'IBE-' . $metalCode . '-' . str_pad((string) $item->id, 6, '0', STR_PAD_LEFT);
     }
 
     public function generateQrCode(): void
@@ -70,15 +71,18 @@ class InventoryItem extends Model
             mkdir($directory, 0755, true);
         }
 
-        $filename = 'qr-' . $this->verification_token . '.svg';
+        $filename = 'qr-' . $this->verification_token . '.png';
         $path = $directory . '/' . $filename;
 
-        $svg = \SimpleSoftwareIO\QrCode\Facades\QrCode::size(400)
-            ->errorCorrection('H')
-            ->margin(2)
-            ->generate($url);
+        $builder = \Endroid\QrCode\Builder\Builder::create()
+            ->writer(new \Endroid\QrCode\Writer\PngWriter())
+            ->data($url)
+            ->size(400)
+            ->margin(8)
+            ->errorCorrectionLevel(\Endroid\QrCode\ErrorCorrectionLevel::High)
+            ->build();
 
-        file_put_contents($path, $svg);
+        file_put_contents($path, $builder->getString());
 
         $this->update(['qr_code_path' => 'qr-codes/' . $filename]);
     }
@@ -130,15 +134,24 @@ class InventoryItem extends Model
         };
     }
 
-    public function markAsSold(string $name, string $phone, float $price): void
+    public function markAsSold(string $name, string $phone, float $price): bool
     {
-        $this->update([
-            'status' => 'sold',
-            'sold_at' => now(),
-            'sold_to_name' => $name,
-            'sold_to_phone' => $phone,
-            'sold_price' => $price,
-        ]);
+        $affected = static::where('id', $this->id)
+            ->whereIn('status', ['in_stock', 'reserved'])
+            ->update([
+                'status' => 'sold',
+                'sold_at' => now(),
+                'sold_to_name' => $name,
+                'sold_to_phone' => $phone,
+                'sold_price' => $price,
+            ]);
+
+        if ($affected) {
+            $this->refresh();
+            return true;
+        }
+
+        return false;
     }
 
     public function logScan(string $ip, ?string $userAgent): void

@@ -27,7 +27,7 @@ class ProductCategoryResource extends Resource
     {
         return $schema->components([
             TextInput::make('name')->required()->maxLength(255),
-            TextInput::make('slug')->maxLength(255)->helperText('Auto-generated from name if left empty'),
+            TextInput::make('slug')->maxLength(255)->unique(ignoreRecord: true)->helperText('Auto-generated from name if left empty'),
             TextInput::make('icon')->placeholder('e.g. 🥇 or 💍')->maxLength(10),
             Toggle::make('show_live_price')->label('Show live market price')->helperText('ON for bullion (bars/coins), OFF for jewelry (shows Enquire instead)')->default(false),
             TextInput::make('sort_order')->numeric()->default(0),

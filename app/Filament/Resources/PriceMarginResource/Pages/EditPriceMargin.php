@@ -4,7 +4,6 @@ namespace App\Filament\Resources\PriceMarginResource\Pages;
 
 use App\Filament\Resources\PriceMarginResource;
 use App\Models\MarginLog;
-use App\Services\PriceEngine\PriceFetcher;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Support\Facades\Auth;
@@ -48,19 +47,11 @@ class EditPriceMargin extends EditRecord
             'created_at' => now(),
         ]);
 
-        // Re-fetch prices with updated margins so they take effect immediately
-        try {
-            app(PriceFetcher::class)->fetchAndStore();
-            Notification::make()
-                ->title('Prices recalculated with new margins.')
-                ->success()
-                ->send();
-        } catch (\Throwable $e) {
-            Notification::make()
-                ->title('Margin saved but price refresh failed: ' . $e->getMessage())
-                ->warning()
-                ->send();
-        }
+        Notification::make()
+            ->title('Margin saved.')
+            ->body('Prices will refresh on the next scheduled fetch (within 1 minute).')
+            ->success()
+            ->send();
     }
 
     protected function getRedirectUrl(): string

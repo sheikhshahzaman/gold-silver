@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\PaymentResource\Pages;
 use App\Models\Payment;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Infolists\Components\ImageEntry;
@@ -18,6 +19,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class PaymentResource extends Resource
 {
@@ -37,9 +39,9 @@ class PaymentResource extends Resource
             ->components([
                 Section::make('Payment Details')
                     ->schema([
-                        TextInput::make('order.order_number')
+                        Placeholder::make('order_number')
                             ->label('Order Number')
-                            ->disabled(),
+                            ->content(fn ($record) => $record?->order?->order_number ?? '-'),
                         TextInput::make('method')
                             ->disabled(),
                         TextInput::make('amount')
@@ -181,12 +183,16 @@ class PaymentResource extends Resource
                     ->modalDescription('Are you sure you want to verify this payment?')
                     ->visible(fn (Payment $record): bool => $record->status === 'pending')
                     ->action(function (Payment $record): void {
-                        $record->update([
-                            'status' => 'verified',
-                            'verified_by' => Auth::id(),
-                            'verified_at' => now(),
-                        ]);
-                        $record->order->update(['status' => 'confirmed']);
+                        DB::transaction(function () use ($record) {
+                            $record->update([
+                                'status' => 'verified',
+                                'verified_by' => Auth::id(),
+                                'verified_at' => now(),
+                            ]);
+                            if (in_array($record->order->status, ['pending', 'awaiting_verification'], true)) {
+                                $record->order->update(['status' => 'confirmed']);
+                            }
+                        });
                     }),
                 Action::make('reject')
                     ->label('Reject Payment')
@@ -197,10 +203,14 @@ class PaymentResource extends Resource
                     ->modalDescription('Are you sure you want to reject this payment?')
                     ->visible(fn (Payment $record): bool => $record->status === 'pending')
                     ->action(function (Payment $record): void {
-                        $record->update([
-                            'status' => 'rejected',
-                        ]);
-                        $record->order->update(['status' => 'cancelled']);
+                        DB::transaction(function () use ($record) {
+                            $record->update([
+                                'status' => 'rejected',
+                            ]);
+                            if (in_array($record->order->status, ['pending', 'awaiting_verification'], true)) {
+                                $record->order->update(['status' => 'cancelled']);
+                            }
+                        });
                     }),
             ])
             ->bulkActions([]);

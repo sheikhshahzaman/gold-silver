@@ -167,11 +167,19 @@ class InventoryItemResource extends Resource
                             ->prefix('Rs'),
                     ])
                     ->action(function (InventoryItem $record, array $data) {
-                        $record->markAsSold($data['sold_to_name'], $data['sold_to_phone'], $data['sold_price']);
-                        \Filament\Notifications\Notification::make()
-                            ->title('Item marked as sold')
-                            ->success()
-                            ->send();
+                        $sold = $record->markAsSold($data['sold_to_name'], $data['sold_to_phone'], $data['sold_price']);
+                        if ($sold) {
+                            \Filament\Notifications\Notification::make()
+                                ->title('Item marked as sold')
+                                ->success()
+                                ->send();
+                        } else {
+                            \Filament\Notifications\Notification::make()
+                                ->title('Item is no longer available to sell')
+                                ->body('Status changed since the page was loaded.')
+                                ->danger()
+                                ->send();
+                        }
                     }),
 
                 ViewAction::make(),

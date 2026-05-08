@@ -10,6 +10,7 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Livewire\WithFileUploads;
 
@@ -130,10 +131,12 @@ class SiteSettings extends Page implements HasForms
 
         if (array_key_exists('international_spread_gold_pct', $data)) {
             Setting::set('international_spread_gold_pct', (float) $data['international_spread_gold_pct']);
+            Cache::forget('setting.intl_spread_gold');
         }
 
         if (array_key_exists('international_spread_silver_pct', $data)) {
             Setting::set('international_spread_silver_pct', (float) $data['international_spread_silver_pct']);
+            Cache::forget('setting.intl_spread_silver');
         }
 
         Notification::make()

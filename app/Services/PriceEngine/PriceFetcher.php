@@ -277,31 +277,43 @@ class PriceFetcher
                 ?? null;
 
             if ($gold24kPerTola === null) {
-                // If we don't have 24k, we can't derive other karats from scraper
-                // Use whatever the scraper gave us directly
+                // If we don't have 24k, we can't derive other karats from scraper.
+                // Use whatever the scraper gave us directly, but apply admin margins.
                 foreach ($result['gold_prices'] as $karat => $prices) {
                     $buyPerTola = $prices['buy_per_tola'] ?? 0;
                     $sellPerTola = $prices['sell_per_tola'] ?? $buyPerTola;
-                    $unitPrices = $this->calculator->deriveAllUnitPrices($buyPerTola);
+
+                    $buyMargin = $margins['gold'][$karat]['buy_margin'] ?? 0;
+                    $sellMargin = $margins['gold'][$karat]['sell_margin'] ?? 0;
+
+                    $buyUnitPrices = $this->calculator->deriveAllUnitPrices($buyPerTola);
+                    $sellUnitPrices = $this->calculator->deriveAllUnitPrices($sellPerTola);
 
                     foreach (self::GOLD_UNITS as $unit) {
-                        $basePrice = $unitPrices[$unit];
+                        $buyPrice = $this->calculator->applyMargin($buyUnitPrices[$unit], $buyMargin, $unit);
+                        $sellPrice = $this->calculator->applyMargin($sellUnitPrices[$unit], $sellMargin, $unit);
+
                         $cacheData[$karat][$unit] = [
-                            'buy' => $basePrice,
-                            'sell' => $this->calculator->deriveAllUnitPrices($sellPerTola)[$unit],
+                            'buy' => $buyPrice,
+                            'sell' => $sellPrice,
+                            'base' => $buyUnitPrices[$unit],
                         ];
 
-                        MetalPrice::create([
-                            'metal' => 'gold',
-                            'type' => 'local',
-                            'karat' => $karat,
-                            'unit' => $unit,
-                            'buy_price' => $basePrice,
-                            'sell_price' => $this->calculator->deriveAllUnitPrices($sellPerTola)[$unit],
-                            'currency' => 'PKR',
-                            'source' => $result['source'],
-                            'fetched_at' => $now,
-                        ]);
+                        MetalPrice::updateOrCreate(
+                            [
+                                'metal' => 'gold',
+                                'type' => 'local',
+                                'karat' => $karat,
+                                'unit' => $unit,
+                                'fetched_at' => $now,
+                            ],
+                            [
+                                'buy_price' => $buyPrice,
+                                'sell_price' => $sellPrice,
+                                'currency' => 'PKR',
+                                'source' => $result['source'],
+                            ],
+                        );
                     }
                 }
 
@@ -343,17 +355,21 @@ class PriceFetcher
                     'base' => $basePrice,
                 ];
 
-                MetalPrice::create([
-                    'metal' => 'gold',
-                    'type' => 'local',
-                    'karat' => $karat,
-                    'unit' => $unit,
-                    'buy_price' => $buyPrice,
-                    'sell_price' => $sellPrice,
-                    'currency' => 'PKR',
-                    'source' => $result['source'],
-                    'fetched_at' => $now,
-                ]);
+                MetalPrice::updateOrCreate(
+                    [
+                        'metal' => 'gold',
+                        'type' => 'local',
+                        'karat' => $karat,
+                        'unit' => $unit,
+                        'fetched_at' => $now,
+                    ],
+                    [
+                        'buy_price' => $buyPrice,
+                        'sell_price' => $sellPrice,
+                        'currency' => 'PKR',
+                        'source' => $result['source'],
+                    ],
+                );
             }
         }
 
@@ -388,9 +404,10 @@ class PriceFetcher
             return $cacheData;
         }
 
-        // Get silver margins
-        $buyMargin = $margins['silver']['']['buy_margin'] ?? 0;
-        $sellMargin = $margins['silver']['']['sell_margin'] ?? 0;
+        // Get silver margins (silver has a single margin row regardless of karat key)
+        $silverMargin = $margins['silver'] ? reset($margins['silver']) : null;
+        $buyMargin = $silverMargin['buy_margin'] ?? 0;
+        $sellMargin = $silverMargin['sell_margin'] ?? 0;
 
         // Derive all unit prices
         $unitPrices = $this->calculator->deriveAllUnitPrices($silverPerTola);
@@ -419,17 +436,21 @@ class PriceFetcher
                 'base' => $basePrice,
             ];
 
-            MetalPrice::create([
-                'metal' => 'silver',
-                'type' => 'local',
-                'karat' => null,
-                'unit' => $unit,
-                'buy_price' => $buyPrice,
-                'sell_price' => $sellPrice,
-                'currency' => 'PKR',
-                'source' => $result['source'],
-                'fetched_at' => $now,
-            ]);
+            MetalPrice::updateOrCreate(
+                [
+                    'metal' => 'silver',
+                    'type' => 'local',
+                    'karat' => null,
+                    'unit' => $unit,
+                    'fetched_at' => $now,
+                ],
+                [
+                    'buy_price' => $buyPrice,
+                    'sell_price' => $sellPrice,
+                    'currency' => 'PKR',
+                    'source' => $result['source'],
+                ],
+            );
         }
 
         return $cacheData;
@@ -470,14 +491,18 @@ class PriceFetcher
 
             $cacheData[$key] = ['buy' => $buyRate, 'sell' => $sellRate];
 
-            CurrencyRate::create([
-                'currency_pair' => $pairLabel,
-                'type' => 'open_market',
-                'buy_rate' => $buyRate,
-                'sell_rate' => $sellRate,
-                'source' => $source,
-                'fetched_at' => $now,
-            ]);
+            CurrencyRate::updateOrCreate(
+                [
+                    'currency_pair' => $pairLabel,
+                    'type' => 'open_market',
+                    'fetched_at' => $now,
+                ],
+                [
+                    'buy_rate' => $buyRate,
+                    'sell_rate' => $sellRate,
+                    'source' => $source,
+                ],
+            );
         }
 
         return $cacheData;
@@ -512,31 +537,38 @@ class PriceFetcher
         $now = now();
 
         if (!empty($data['xau_usd'])) {
-            MetalPrice::create([
-                'metal' => 'gold',
-                'type' => 'international',
-                'karat' => '24k',
-                'unit' => 'ounce',
-                'buy_price' => $data['xau_usd'],
-                'sell_price' => $data['xau_usd'] + 0.50,
-                'currency' => 'USD',
-                'source' => $source,
-                'fetched_at' => $now,
-            ]);
+            MetalPrice::updateOrCreate(
+                [
+                    'metal' => 'gold',
+                    'type' => 'international',
+                    'karat' => '24k',
+                    'unit' => 'ounce',
+                    'fetched_at' => $now,
+                ],
+                [
+                    'buy_price' => $data['xau_usd'],
+                    'sell_price' => $data['xau_usd'] + 0.50,
+                    'currency' => 'USD',
+                    'source' => $source,
+                ],
+            );
         }
 
         if (!empty($data['xag_usd'])) {
-            MetalPrice::create([
-                'metal' => 'silver',
-                'type' => 'international',
-                'karat' => null,
-                'unit' => 'ounce',
-                'buy_price' => $data['xag_usd'],
-                'sell_price' => $data['xag_usd'] + 0.03,
-                'currency' => 'USD',
-                'source' => $source,
-                'fetched_at' => $now,
-            ]);
+            MetalPrice::updateOrCreate(
+                [
+                    'metal' => 'silver',
+                    'type' => 'international',
+                    'karat' => null,
+                    'unit' => 'ounce',
+                    'fetched_at' => $now,
+                ],
+                [
+                    'buy_price' => $data['xag_usd'],
+                    'sell_price' => $data['xag_usd'] + 0.03,
+                    'currency' => 'USD',
+                ],
+            );
         }
     }
 
