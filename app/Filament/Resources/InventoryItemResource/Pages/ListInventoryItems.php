@@ -37,10 +37,17 @@ class ListInventoryItems extends ListRecords
                         ->default(1)
                         ->minValue(1)
                         ->maxValue(100),
+                    Select::make('qr_size')
+                        ->label('QR Sticker Size')
+                        ->options(QrPdfGenerator::sizeOptions())
+                        ->default('medium')
+                        ->required()
+                        ->helperText('Pick based on the piece you\'ll attach the sticker to.'),
                 ])
                 ->action(function (array $data) {
                     $count = (int) $data['count'];
                     $productId = $data['product_id'];
+                    $size = $data['qr_size'] ?? 'medium';
 
                     $created = new Collection();
                     for ($i = 0; $i < $count; $i++) {
@@ -55,11 +62,11 @@ class ListInventoryItems extends ListRecords
                         ->success()
                         ->send();
 
-                    $pdf = (new QrPdfGenerator())->generate($created);
+                    $pdf = (new QrPdfGenerator())->generate($created, $size);
 
                     return response()->streamDownload(
                         fn () => print($pdf->output()),
-                        'qr-codes-batch-' . now()->format('Y-m-d-His') . '.pdf',
+                        'qr-codes-batch-' . $size . '-' . now()->format('Y-m-d-His') . '.pdf',
                     );
                 }),
 

@@ -190,11 +190,19 @@ class InventoryItemResource extends Resource
                     BulkAction::make('printQrCodes')
                         ->label('Print QR Codes')
                         ->icon('heroicon-o-printer')
-                        ->action(function (Collection $records) {
-                            $pdf = (new QrPdfGenerator())->generate($records);
+                        ->form([
+                            Select::make('qr_size')
+                                ->label('QR Sticker Size')
+                                ->options(QrPdfGenerator::sizeOptions())
+                                ->default('medium')
+                                ->required(),
+                        ])
+                        ->action(function (Collection $records, array $data) {
+                            $size = $data['qr_size'] ?? 'medium';
+                            $pdf = (new QrPdfGenerator())->generate($records, $size);
                             return response()->streamDownload(
                                 fn () => print($pdf->output()),
-                                'qr-codes-' . now()->format('Y-m-d-His') . '.pdf'
+                                'qr-codes-' . $size . '-' . now()->format('Y-m-d-His') . '.pdf',
                             );
                         })
                         ->deselectRecordsAfterCompletion(),

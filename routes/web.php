@@ -33,6 +33,9 @@ Route::get('/order/{orderNumber}', OrderConfirmationPage::class)->name('order.sh
 Route::get('/scan', ScanQrPage::class)->name('scan');
 Route::get('/verify', VerifySerialPage::class)->name('verify.serial');
 Route::get('/verify/{token}', VerifyItemPage::class)->name('verify');
+// Short alias used by printed QR stickers — keeps encoded data short so
+// QRs scan reliably when printed at ~10mm. Same component, same behavior.
+Route::get('/v/{token}', VerifyItemPage::class)->name('verify.short');
 Route::get('/more', fn () => view('pages.more'))->name('more');
 
 // Static pages with dedicated templates

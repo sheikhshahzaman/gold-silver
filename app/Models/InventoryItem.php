@@ -28,11 +28,14 @@ class InventoryItem extends Model
     {
         static::creating(function (InventoryItem $item) {
             if (empty($item->verification_token)) {
-                $item->verification_token = bin2hex(random_bytes(20)); // 40 hex chars
+                // 16 hex chars (64-bit) — short enough for tiny QR prints
+                // while still cryptographically unguessable when the
+                // /verify endpoint is rate-limited.
+                $item->verification_token = bin2hex(random_bytes(8));
             }
 
             if (empty($item->serial_number)) {
-                $item->serial_number = 'IBE-PENDING-' . substr($item->verification_token, 0, 16);
+                $item->serial_number = 'IBE-PENDING-' . $item->verification_token;
             }
         });
 
@@ -64,7 +67,9 @@ class InventoryItem extends Model
 
     public function generateQrCode(): void
     {
-        $url = url('/verify/' . $this->verification_token);
+        // Short URL alias /v/{token} keeps encoded data short so the QR
+        // can shrink to ~10mm and still scan reliably.
+        $url = url('/v/' . $this->verification_token);
         $directory = public_path('qr-codes');
 
         if (!is_dir($directory)) {
@@ -77,9 +82,14 @@ class InventoryItem extends Model
         $builder = \Endroid\QrCode\Builder\Builder::create()
             ->writer(new \Endroid\QrCode\Writer\PngWriter())
             ->data($url)
-            ->size(400)
-            ->margin(8)
-            ->errorCorrectionLevel(\Endroid\QrCode\ErrorCorrectionLevel::High)
+            // 800px source PNG stays crisp when scaled down to 10mm in print.
+            ->size(800)
+            // Quiet zone of 2 modules — the print cell already provides
+            // surrounding whitespace, no need for a fat 8-module margin.
+            ->margin(2)
+            // Medium ECC (15% redundancy) is enough for stickers on sealed
+            // pieces. High ECC bloats the QR by an extra version.
+            ->errorCorrectionLevel(\Endroid\QrCode\ErrorCorrectionLevel::Medium)
             ->build();
 
         file_put_contents($path, $builder->getString());
