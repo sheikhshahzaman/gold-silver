@@ -14,6 +14,13 @@ class PriceCacheManager
     private const TTL = 900;
 
     /**
+     * Short TTL used when serving stale DB data because both the cache and an
+     * on-demand refetch failed — keeps the next request from waiting 15 minutes
+     * before trying to recover.
+     */
+    private const STALE_FALLBACK_TTL = 60;
+
+    /**
      * Cache key prefixes.
      */
     private const KEY_GOLD = 'prices.gold';
@@ -157,28 +164,50 @@ class PriceCacheManager
             return $all;
         }
 
-        // Fallback to individual cache reads
-        $data = [
-            'gold' => $this->getCurrentGoldPrices() ?? [],
-            'silver' => $this->getCurrentSilverPrices() ?? [],
-            'currencies' => $this->getCurrentCurrencyRates() ?? [],
-            'international' => $this->getInternationalRates() ?? [],
-            'platinum' => $this->getPlatinumRates() ?? [],
-            'palladium' => $this->getPalladiumRates() ?? [],
-            'crude_oil' => $this->getCrudeOilPrice(),
-            'psx' => $this->getPsxData() ?? [],
-            'last_updated' => $this->getLastUpdated(),
-        ];
-
-        // If cache is completely cold, load from database and repopulate cache
-        if (empty($data['gold']) && empty($data['international'])) {
-            $data = $this->loadFromDatabase();
-            if (!empty($data['gold']) || !empty($data['international'])) {
-                $this->cacheAllPrices($data);
+        // Cache is cold. Attempt a synchronous refetch first so the system
+        // self-heals even when the 1-minute scheduler isn't running on the host.
+        // Cache::lock prevents a thundering herd of concurrent requests from
+        // all hitting the upstream source.
+        if ($this->tryRefreshSync()) {
+            $all = Cache::get(self::KEY_ALL);
+            if ($all !== null) {
+                return $all;
             }
         }
 
+        // Last resort: serve whatever's in the DB. Cache it with a SHORT TTL
+        // (not the full 15-min) so the next request retries the refresh rather
+        // than silently locking in stale data for 15 minutes at a time.
+        $data = $this->loadFromDatabase();
+        if (!empty($data['gold']) || !empty($data['international'])) {
+            Cache::put(self::KEY_ALL, $data + ['last_updated' => now()->toIso8601String()], self::STALE_FALLBACK_TTL);
+        }
+
         return $data;
+    }
+
+    /**
+     * Try to refresh prices synchronously, guarded by a short lock so concurrent
+     * requests don't pile on the upstream source.
+     */
+    private function tryRefreshSync(): bool
+    {
+        $lock = Cache::lock('prices.refresh.lock', 30);
+
+        if (!$lock->get()) {
+            return false;
+        }
+
+        try {
+            return app(PriceFetcher::class)->fetchAndStore();
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('PriceCacheManager: on-demand refresh failed', [
+                'error' => $e->getMessage(),
+            ]);
+            return false;
+        } finally {
+            $lock->release();
+        }
     }
 
     /**

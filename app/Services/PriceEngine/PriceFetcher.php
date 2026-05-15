@@ -270,57 +270,16 @@ class PriceFetcher
         $now = now();
         $cacheData = [];
 
+        // 24K-per-tola anchor for any karat the upstream source doesn't quote directly (e.g. 18K).
+        $gold24kPerTola = null;
+
         if (!empty($result['gold_pkr_direct']) && !empty($result['gold_prices'])) {
-            // Use direct PKR prices from PakGold
             $gold24kPerTola = $result['gold_prices']['24k']['buy_per_tola']
                 ?? $result['gold_prices']['24k']['sell_per_tola']
                 ?? null;
+        }
 
-            if ($gold24kPerTola === null) {
-                // If we don't have 24k, we can't derive other karats from scraper.
-                // Use whatever the scraper gave us directly, but apply admin margins.
-                foreach ($result['gold_prices'] as $karat => $prices) {
-                    $buyPerTola = $prices['buy_per_tola'] ?? 0;
-                    $sellPerTola = $prices['sell_per_tola'] ?? $buyPerTola;
-
-                    $buyMargin = $margins['gold'][$karat]['buy_margin'] ?? 0;
-                    $sellMargin = $margins['gold'][$karat]['sell_margin'] ?? 0;
-
-                    $buyUnitPrices = $this->calculator->deriveAllUnitPrices($buyPerTola);
-                    $sellUnitPrices = $this->calculator->deriveAllUnitPrices($sellPerTola);
-
-                    foreach (self::GOLD_UNITS as $unit) {
-                        $buyPrice = $this->calculator->applyMargin($buyUnitPrices[$unit], $buyMargin, $unit);
-                        $sellPrice = $this->calculator->applyMargin($sellUnitPrices[$unit], $sellMargin, $unit);
-
-                        $cacheData[$karat][$unit] = [
-                            'buy' => $buyPrice,
-                            'sell' => $sellPrice,
-                            'base' => $buyUnitPrices[$unit],
-                        ];
-
-                        MetalPrice::updateOrCreate(
-                            [
-                                'metal' => 'gold',
-                                'type' => 'local',
-                                'karat' => $karat,
-                                'unit' => $unit,
-                                'fetched_at' => $now,
-                            ],
-                            [
-                                'buy_price' => $buyPrice,
-                                'sell_price' => $sellPrice,
-                                'currency' => 'PKR',
-                                'source' => $result['source'],
-                            ],
-                        );
-                    }
-                }
-
-                return $cacheData;
-            }
-        } else {
-            // Calculate from international price
+        if ($gold24kPerTola === null) {
             if (!isset($result['xau_usd']) || !isset($result['usd_pkr'])) {
                 return $cacheData;
             }
@@ -331,28 +290,41 @@ class PriceFetcher
             );
         }
 
-        // Derive all karat prices from 24k per tola
-        $karatPrices = $this->calculator->deriveAllKaratPrices($gold24kPerTola);
+        $derivedKaratPrices = $this->calculator->deriveAllKaratPrices($gold24kPerTola);
+        $directPrices = $result['gold_prices'] ?? [];
 
         foreach (self::GOLD_KARATS as $karat) {
-            $karatPerTola = $karatPrices[$karat];
+            // Prefer the source's direct per-karat buy/sell. Pakistan's bullion market quotes
+            // 22K/21K/Rawa with local spreads that are not a clean purity-ratio of 24K, so
+            // math-deriving them produces prices several thousand PKR off the actual board rate.
+            $directBuy = (float) ($directPrices[$karat]['buy_per_tola'] ?? 0);
+            $directSell = (float) ($directPrices[$karat]['sell_per_tola'] ?? 0);
 
-            // Get margins for this karat
+            if ($directBuy > 0) {
+                $buyPerTola = $directBuy;
+                $sellPerTola = $directSell > 0 ? $directSell : $directBuy;
+            } else {
+                $buyPerTola = $derivedKaratPrices[$karat];
+                $sellPerTola = $derivedKaratPrices[$karat];
+            }
+
             $buyMargin = $margins['gold'][$karat]['buy_margin'] ?? 0;
             $sellMargin = $margins['gold'][$karat]['sell_margin'] ?? 0;
 
-            // Derive all unit prices from per-tola price
-            $unitPrices = $this->calculator->deriveAllUnitPrices($karatPerTola);
+            $buyUnitPrices = $this->calculator->deriveAllUnitPrices($buyPerTola);
+            $sellUnitPrices = $this->calculator->deriveAllUnitPrices($sellPerTola);
 
             foreach (self::GOLD_UNITS as $unit) {
-                $basePrice = $unitPrices[$unit];
-                $buyPrice = $this->calculator->applyMargin($basePrice, $buyMargin, $unit);
-                $sellPrice = $this->calculator->applyMargin($basePrice, $sellMargin, $unit);
+                $buyBase = $buyUnitPrices[$unit];
+                $sellBase = $sellUnitPrices[$unit];
+
+                $buyPrice = $this->calculator->applyMargin($buyBase, $buyMargin, $unit);
+                $sellPrice = $this->calculator->applyMargin($sellBase, $sellMargin, $unit);
 
                 $cacheData[$karat][$unit] = [
                     'buy' => $buyPrice,
                     'sell' => $sellPrice,
-                    'base' => $basePrice,
+                    'base' => $buyBase,
                 ];
 
                 MetalPrice::updateOrCreate(
