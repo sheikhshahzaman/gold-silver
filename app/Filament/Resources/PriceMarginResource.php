@@ -30,7 +30,7 @@ class PriceMarginResource extends Resource
         return $schema
             ->components([
                 Section::make('Margin Settings')
-                    ->description('Current Market Price + Your Margin = Displayed Price. Margins are stored per tola and automatically converted for other units.')
+                    ->description('Current Market Price + Your Margin = Displayed Price. Use a positive value to add to the live rate, or a negative value (e.g. -500) to deduct from it. Margins are stored per tola and automatically converted for other units.')
                     ->icon('heroicon-o-information-circle')
                     ->schema([
                         TextInput::make('metal')
@@ -41,18 +41,18 @@ class PriceMarginResource extends Resource
                             ->dehydrated(false),
                         TextInput::make('buy_margin')
                             ->label('Buy Margin (per Tola)')
+                            ->helperText('Positive adds to live rate · Negative deducts (e.g. -500)')
                             ->numeric()
                             ->prefix('Rs')
                             ->required()
-                            ->step(0.01)
-                            ->minValue(0),
+                            ->step(0.01),
                         TextInput::make('sell_margin')
                             ->label('Sell Margin (per Tola)')
+                            ->helperText('Positive adds to live rate · Negative deducts (e.g. -500)')
                             ->numeric()
                             ->prefix('Rs')
                             ->required()
-                            ->step(0.01)
-                            ->minValue(0),
+                            ->step(0.01),
                     ])
                     ->columns(2),
             ]);
