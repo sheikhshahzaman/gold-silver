@@ -539,6 +539,7 @@ class PriceFetcher
                     'buy_price' => $data['xag_usd'],
                     'sell_price' => $data['xag_usd'] + 0.03,
                     'currency' => 'USD',
+                    'source' => $source,
                 ],
             );
         }
