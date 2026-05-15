@@ -10,7 +10,14 @@
                     $siteName = \App\Models\Setting::get('site_name', 'Islamabad Bullion Exchange');
                 @endphp
                 @if($siteLogo && Storage::disk('public')->exists($siteLogo))
-                    <img src="{{ Storage::disk('public')->url($siteLogo) }}" alt="{{ $siteName }}" class="h-9 w-auto object-contain">
+                    {{-- If the URL 404s (e.g. missing public/storage symlink on prod), swap to the SVG fallback. --}}
+                    <img src="{{ Storage::disk('public')->url($siteLogo) }}" alt="{{ $siteName }}" class="h-9 w-auto object-contain"
+                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                    <div class="w-9 h-9 rounded-lg items-center justify-center" style="background: #C9A84C; display: none;">
+                        <svg class="w-5 h-5 text-emerald-950" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+                        </svg>
+                    </div>
                 @else
                     <div class="w-9 h-9 rounded-lg flex items-center justify-center" style="background: #C9A84C;">
                         <svg class="w-5 h-5 text-emerald-950" viewBox="0 0 24 24" fill="currentColor">

@@ -11,7 +11,13 @@
                         $footerSiteName = \App\Models\Setting::get('site_name', 'Islamabad Bullion Exchange');
                     @endphp
                     @if($footerLogo && Storage::disk('public')->exists($footerLogo))
-                        <img src="{{ Storage::disk('public')->url($footerLogo) }}" alt="{{ $footerSiteName }}" class="h-8 w-auto object-contain">
+                        <img src="{{ Storage::disk('public')->url($footerLogo) }}" alt="{{ $footerSiteName }}" class="h-8 w-auto object-contain"
+                             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                        <div class="w-8 h-8 rounded items-center justify-center" style="background: #C9A84C; display: none;">
+                            <svg class="w-4 h-4 text-emerald-950" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+                            </svg>
+                        </div>
                     @else
                         <div class="w-8 h-8 rounded flex items-center justify-center" style="background: #C9A84C;">
                             <svg class="w-4 h-4 text-emerald-950" viewBox="0 0 24 24" fill="currentColor">
