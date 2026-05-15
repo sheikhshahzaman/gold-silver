@@ -1,6 +1,6 @@
 <div>
 
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+    <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-6 space-y-6">
 
         {{-- ============================================================== --}}
         {{-- Section A: International Metal Rates (dark card for contrast) --}}
@@ -96,7 +96,7 @@
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
             {{-- Section B: Gold Rates (PKR) - LIGHT CARD --}}
-            <section class="glass-card p-5 sm:p-6" wire:key="gold-rates">
+            <section class="glass-card p-3 sm:p-5 md:p-6" wire:key="gold-rates">
                 <div class="mb-5">
                     <h2 class="text-lg sm:text-xl font-bold flex items-center gap-2" style="color: #0A2E23;">
                         <span class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold" style="background: linear-gradient(135deg, #C6963C, #A67922); color: white;">Au</span>
@@ -122,13 +122,13 @@
                 </div>
 
                 {{-- Price Table --}}
-                <div class="overflow-x-auto">
-                    <table class="w-full text-sm">
+                <div class="overflow-x-auto -mx-1 sm:mx-0">
+                    <table class="w-full text-xs sm:text-sm table-fixed">
                         <thead>
                             <tr style="border-bottom: 2px solid #E8DFD0;">
-                                <th class="text-left py-3 px-3 font-semibold uppercase text-xs tracking-wider" style="color: #0A2E23;">Gold</th>
-                                <th class="text-right py-3 px-3 font-semibold uppercase text-xs tracking-wider" style="color: #1B5E20;">Buy</th>
-                                <th class="text-right py-3 px-3 font-semibold uppercase text-xs tracking-wider" style="color: #E65100;">Sell</th>
+                                <th class="text-left py-3 px-1.5 sm:px-3 font-semibold uppercase text-[10px] sm:text-xs tracking-wider w-[28%] sm:w-auto" style="color: #0A2E23;">Gold</th>
+                                <th class="text-right py-3 px-1.5 sm:px-3 font-semibold uppercase text-[10px] sm:text-xs tracking-wider" style="color: #1B5E20;">Buy</th>
+                                <th class="text-right py-3 px-1.5 sm:px-3 font-semibold uppercase text-[10px] sm:text-xs tracking-wider" style="color: #E65100;">Sell</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -141,20 +141,20 @@
                                     $sellPrice = $goldPrices[$karat][$selectedUnit]['sell'] ?? null;
                                 @endphp
                                 <tr class="border-b transition-colors hover:bg-cream/50" style="border-color: #F0E8DB;" wire:key="gold-{{ $karat }}-{{ $selectedUnit }}">
-                                    <td class="py-3.5 px-3">
-                                        <div class="flex items-center gap-2">
+                                    <td class="py-3 sm:py-3.5 px-1.5 sm:px-3">
+                                        <div class="flex flex-col sm:flex-row sm:items-center sm:gap-2 leading-tight">
                                             <span class="font-bold" style="color: #0A2E23;">{{ $label }}</span>
-                                            <span class="text-xs" style="color: #999;">({{ $this->selectedUnitLabel }})</span>
+                                            <span class="text-[10px] sm:text-xs" style="color: #999;">({{ $this->selectedUnitLabel }})</span>
                                         </div>
                                     </td>
-                                    <td class="text-right py-3.5 px-3">
+                                    <td class="text-right py-3 sm:py-3.5 px-1.5 sm:px-3">
                                         @if($buyPrice !== null)
                                             <span class="price-badge-buy" data-price="{{ $buyPrice }}" data-pkey="gold-{{ $karat }}-{{ $selectedUnit }}-buy">Rs {{ number_format($buyPrice) }}</span>
                                         @else
                                             <span style="color: #ccc;">&mdash;</span>
                                         @endif
                                     </td>
-                                    <td class="text-right py-3.5 px-3">
+                                    <td class="text-right py-3 sm:py-3.5 px-1.5 sm:px-3">
                                         @if($sellPrice !== null)
                                             <span class="price-badge-sell" data-price="{{ $sellPrice }}" data-pkey="gold-{{ $karat }}-{{ $selectedUnit }}-sell">Rs {{ number_format($sellPrice) }}</span>
                                         @else
@@ -175,7 +175,7 @@
             </section>
 
             {{-- Section C: Silver Rates (PKR) - LIGHT CARD --}}
-            <section class="glass-card p-5 sm:p-6" wire:key="silver-rates">
+            <section class="glass-card p-3 sm:p-5 md:p-6" wire:key="silver-rates">
                 <div class="mb-5">
                     <h2 class="text-lg sm:text-xl font-bold flex items-center gap-2" style="color: #0A2E23;">
                         <span class="w-7 h-7 rounded-full bg-gray-400/30 flex items-center justify-center text-gray-600 text-xs font-bold">Ag</span>
@@ -184,13 +184,13 @@
                     <div class="h-0.5 w-16 bg-gradient-to-r from-gray-400 to-transparent mt-1 rounded-full"></div>
                 </div>
 
-                <div class="overflow-x-auto">
-                    <table class="w-full text-sm">
+                <div class="overflow-x-auto -mx-1 sm:mx-0">
+                    <table class="w-full text-xs sm:text-sm table-fixed">
                         <thead>
                             <tr style="border-bottom: 2px solid #E8DFD0;">
-                                <th class="text-left py-3 px-3 font-semibold uppercase text-xs tracking-wider" style="color: #0A2E23;">Silver</th>
-                                <th class="text-right py-3 px-3 font-semibold uppercase text-xs tracking-wider" style="color: #1B5E20;">Buy</th>
-                                <th class="text-right py-3 px-3 font-semibold uppercase text-xs tracking-wider" style="color: #E65100;">Sell</th>
+                                <th class="text-left py-3 px-1.5 sm:px-3 font-semibold uppercase text-[10px] sm:text-xs tracking-wider w-[28%] sm:w-auto" style="color: #0A2E23;">Silver</th>
+                                <th class="text-right py-3 px-1.5 sm:px-3 font-semibold uppercase text-[10px] sm:text-xs tracking-wider" style="color: #1B5E20;">Buy</th>
+                                <th class="text-right py-3 px-1.5 sm:px-3 font-semibold uppercase text-[10px] sm:text-xs tracking-wider" style="color: #E65100;">Sell</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -203,17 +203,17 @@
                                     $sellPrice = $silverPrices[$unit]['sell'] ?? null;
                                 @endphp
                                 <tr class="border-b transition-colors hover:bg-cream/50" style="border-color: #F0E8DB;" wire:key="silver-{{ $unit }}">
-                                    <td class="py-3.5 px-3">
+                                    <td class="py-3 sm:py-3.5 px-1.5 sm:px-3">
                                         <span class="font-bold" style="color: #0A2E23;">{{ $label }}</span>
                                     </td>
-                                    <td class="text-right py-3.5 px-3">
+                                    <td class="text-right py-3 sm:py-3.5 px-1.5 sm:px-3">
                                         @if($buyPrice !== null)
                                             <span class="price-badge-buy" data-price="{{ $buyPrice }}" data-pkey="silver-{{ $unit }}-buy">Rs {{ number_format($buyPrice) }}</span>
                                         @else
                                             <span style="color: #ccc;">&mdash;</span>
                                         @endif
                                     </td>
-                                    <td class="text-right py-3.5 px-3">
+                                    <td class="text-right py-3 sm:py-3.5 px-1.5 sm:px-3">
                                         @if($sellPrice !== null)
                                             <span class="price-badge-sell" data-price="{{ $sellPrice }}" data-pkey="silver-{{ $unit }}-sell">Rs {{ number_format($sellPrice) }}</span>
                                         @else
@@ -348,7 +348,7 @@
         {{-- ============================================================== --}}
         {{-- Section E: Currency Exchange Rates - GOLD TINTED CARD          --}}
         {{-- ============================================================== --}}
-        <section class="gold-card p-5 sm:p-6" wire:key="currency-rates">
+        <section class="gold-card p-3 sm:p-5 md:p-6" wire:key="currency-rates">
             <div class="mb-5">
                 <h2 class="text-lg sm:text-xl font-bold flex items-center gap-2" style="color: #0A2E23;">
                     <svg class="w-5 h-5" style="color: #C6963C;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>
@@ -357,25 +357,25 @@
                 <div class="h-0.5 w-16 bg-gradient-to-r from-gold to-transparent mt-1 rounded-full"></div>
             </div>
 
-            <div class="overflow-x-auto">
-                <table class="w-full text-sm">
+            <div class="overflow-x-auto -mx-1 sm:mx-0">
+                <table class="w-full text-xs sm:text-sm table-fixed">
                     <thead>
                         <tr style="border-bottom: 2px solid rgba(198, 150, 60, 0.2);">
-                            <th class="text-left py-3 px-3 font-semibold uppercase text-xs tracking-wider" style="color: #0A2E23;">Currency</th>
-                            <th class="text-right py-3 px-3 font-semibold uppercase text-xs tracking-wider" style="color: #1B5E20;">Buy</th>
-                            <th class="text-right py-3 px-3 font-semibold uppercase text-xs tracking-wider" style="color: #E65100;">Sell</th>
+                            <th class="text-left py-3 px-1.5 sm:px-3 font-semibold uppercase text-[10px] sm:text-xs tracking-wider w-[42%] sm:w-auto" style="color: #0A2E23;">Currency</th>
+                            <th class="text-right py-3 px-1.5 sm:px-3 font-semibold uppercase text-[10px] sm:text-xs tracking-wider" style="color: #1B5E20;">Buy</th>
+                            <th class="text-right py-3 px-1.5 sm:px-3 font-semibold uppercase text-[10px] sm:text-xs tracking-wider" style="color: #E65100;">Sell</th>
                         </tr>
                     </thead>
                     <tbody>
                         @php
                             $currencyMeta = [
-                                'usd_interbank' => ['flag' => "\u{1F3E6}", 'name' => 'Interbank Dollar (USD)'],
-                                'usd_pkr' => ['flag' => "\u{1F1FA}\u{1F1F8}", 'name' => 'Open Market Dollar (USD)'],
-                                'gbp_pkr' => ['flag' => "\u{1F1EC}\u{1F1E7}", 'name' => 'British Pound (GBP)'],
-                                'eur_pkr' => ['flag' => "\u{1F1EA}\u{1F1FA}", 'name' => 'Euro (EUR)'],
-                                'myr_pkr' => ['flag' => "\u{1F1F2}\u{1F1FE}", 'name' => 'Malaysian Ringgit (MYR)'],
-                                'sar_pkr' => ['flag' => "\u{1F1F8}\u{1F1E6}", 'name' => 'Saudi Riyal (SAR)'],
-                                'aed_pkr' => ['flag' => "\u{1F1E6}\u{1F1EA}", 'name' => 'Dubai Dirham (AED)'],
+                                'usd_interbank' => ['flag' => "\u{1F3E6}", 'name' => 'Interbank Dollar (USD)', 'short' => 'USD Interbank'],
+                                'usd_pkr' => ['flag' => "\u{1F1FA}\u{1F1F8}", 'name' => 'Open Market Dollar (USD)', 'short' => 'USD'],
+                                'gbp_pkr' => ['flag' => "\u{1F1EC}\u{1F1E7}", 'name' => 'British Pound (GBP)', 'short' => 'GBP'],
+                                'eur_pkr' => ['flag' => "\u{1F1EA}\u{1F1FA}", 'name' => 'Euro (EUR)', 'short' => 'EUR'],
+                                'myr_pkr' => ['flag' => "\u{1F1F2}\u{1F1FE}", 'name' => 'Malaysian Ringgit (MYR)', 'short' => 'MYR'],
+                                'sar_pkr' => ['flag' => "\u{1F1F8}\u{1F1E6}", 'name' => 'Saudi Riyal (SAR)', 'short' => 'SAR'],
+                                'aed_pkr' => ['flag' => "\u{1F1E6}\u{1F1EA}", 'name' => 'Dubai Dirham (AED)', 'short' => 'AED'],
                             ];
                         @endphp
                         @foreach($currencyMeta as $key => $meta)
@@ -392,20 +392,21 @@
                                 }
                             @endphp
                             <tr class="border-b transition-colors" style="border-color: rgba(198, 150, 60, 0.12);" wire:key="currency-{{ $key }}">
-                                <td class="py-3.5 px-3">
-                                    <div class="flex items-center gap-2.5">
-                                        <span class="text-lg">{{ $meta['flag'] }}</span>
-                                        <span class="font-semibold" style="color: #0A2E23;">{{ $meta['name'] }}</span>
+                                <td class="py-3 sm:py-3.5 px-1.5 sm:px-3">
+                                    <div class="flex items-center gap-1.5 sm:gap-2.5">
+                                        <span class="text-base sm:text-lg">{{ $meta['flag'] }}</span>
+                                        <span class="font-semibold sm:hidden" style="color: #0A2E23;">{{ $meta['short'] }}</span>
+                                        <span class="font-semibold hidden sm:inline" style="color: #0A2E23;">{{ $meta['name'] }}</span>
                                     </div>
                                 </td>
-                                <td class="text-right py-3.5 px-3">
+                                <td class="text-right py-3 sm:py-3.5 px-1.5 sm:px-3">
                                     @if($buyRate !== null && $buyRate > 0)
                                         <span class="price-badge-buy" data-price="{{ $buyRate }}" data-pkey="currency-{{ $key }}-buy">Rs {{ number_format($buyRate, 2) }}</span>
                                     @else
                                         <span style="color: #ccc;">&mdash;</span>
                                     @endif
                                 </td>
-                                <td class="text-right py-3.5 px-3">
+                                <td class="text-right py-3 sm:py-3.5 px-1.5 sm:px-3">
                                     @if($sellRate !== null && $sellRate > 0)
                                         <span class="price-badge-sell" data-price="{{ $sellRate }}" data-pkey="currency-{{ $key }}-sell">Rs {{ number_format($sellRate, 2) }}</span>
                                     @else

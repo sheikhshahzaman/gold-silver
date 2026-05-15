@@ -211,7 +211,7 @@
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {{-- Gold Card --}}
-                <div class="rounded-xl p-5" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(201,168,76,0.2);">
+                <div class="rounded-xl p-4 sm:p-5" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(201,168,76,0.2);">
                     <div class="flex items-center justify-between mb-4">
                         <div class="flex items-center gap-2.5">
                             <span class="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold" style="background: #C9A84C; color: #0A2E23;">Au</span>
@@ -221,30 +221,35 @@
                             </div>
                         </div>
                     </div>
-                    <div class="flex justify-end gap-8 mb-1">
-                        <span class="text-[10px] text-white/35">BUY</span>
-                        <span class="text-[10px] text-white/35">SELL</span>
-                    </div>
                     @php
                         $goldUnits = ['tola' => '1 Tola', '10_gram' => '10 Gram', '5_gram' => '5 Gram', 'gram' => '1 Gram'];
                     @endphp
-                    @foreach($goldUnits as $unit => $label)
-                        @php
-                            $gBuy = $goldPrices['24k'][$unit]['buy'] ?? null;
-                            $gSell = $goldPrices['24k'][$unit]['sell'] ?? null;
-                        @endphp
-                        <div class="flex justify-between items-center py-2 border-b border-white/[0.07] last:border-b-0">
-                            <span class="text-xs text-white/50">{{ $label }}</span>
-                            <div class="flex gap-4">
-                                <span class="text-[13px]" style="color: #4CAF50;" @if($gBuy) data-price="{{ $gBuy }}" data-pkey="gold-24k-{{ $unit }}-buy" @endif>{{ $gBuy ? number_format($gBuy) : '---' }}</span>
-                                <span class="text-[13px]" style="color: #FF7043;" @if($gSell) data-price="{{ $gSell }}" data-pkey="gold-24k-{{ $unit }}-sell" @endif>{{ $gSell ? number_format($gSell) : '---' }}</span>
-                            </div>
-                        </div>
-                    @endforeach
+                    <table class="w-full table-fixed">
+                        <thead>
+                            <tr>
+                                <th class="text-left text-[10px] text-white/35 font-normal pb-1"></th>
+                                <th class="text-right text-[10px] text-white/35 font-normal pb-1 w-[28%]">BUY</th>
+                                <th class="text-right text-[10px] text-white/35 font-normal pb-1 w-[28%]">SELL</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($goldUnits as $unit => $label)
+                                @php
+                                    $gBuy = $goldPrices['24k'][$unit]['buy'] ?? null;
+                                    $gSell = $goldPrices['24k'][$unit]['sell'] ?? null;
+                                @endphp
+                                <tr class="border-b border-white/[0.07] last:border-b-0">
+                                    <td class="py-2 text-xs text-white/50">{{ $label }}</td>
+                                    <td class="py-2 text-right text-[13px] whitespace-nowrap" style="color: #4CAF50;" @if($gBuy) data-price="{{ $gBuy }}" data-pkey="gold-24k-{{ $unit }}-buy" @endif>{{ $gBuy ? number_format($gBuy) : '---' }}</td>
+                                    <td class="py-2 text-right text-[13px] whitespace-nowrap" style="color: #FF7043;" @if($gSell) data-price="{{ $gSell }}" data-pkey="gold-24k-{{ $unit }}-sell" @endif>{{ $gSell ? number_format($gSell) : '---' }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
                 </div>
 
                 {{-- Silver Card --}}
-                <div class="rounded-xl p-5" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(201,168,76,0.2);">
+                <div class="rounded-xl p-4 sm:p-5" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(201,168,76,0.2);">
                     <div class="flex items-center justify-between mb-4">
                         <div class="flex items-center gap-2.5">
                             <span class="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold" style="background: #9E9E9E; color: #fff;">Ag</span>
@@ -254,26 +259,31 @@
                             </div>
                         </div>
                     </div>
-                    <div class="flex justify-end gap-8 mb-1">
-                        <span class="text-[10px] text-white/35">BUY</span>
-                        <span class="text-[10px] text-white/35">SELL</span>
-                    </div>
                     @php
                         $silverUnits = ['kg' => '1 KG', '10_tola' => '10 Tola', 'tola' => '1 Tola', '10_gram' => '10 Gram'];
                     @endphp
-                    @foreach($silverUnits as $unit => $label)
-                        @php
-                            $sBuy = $silverPrices[$unit]['buy'] ?? null;
-                            $sSell = $silverPrices[$unit]['sell'] ?? null;
-                        @endphp
-                        <div class="flex justify-between items-center py-2 border-b border-white/[0.07] last:border-b-0">
-                            <span class="text-xs text-white/50">{{ $label }}</span>
-                            <div class="flex gap-4">
-                                <span class="text-[13px]" style="color: #4CAF50;" @if($sBuy) data-price="{{ $sBuy }}" data-pkey="silver-{{ $unit }}-buy" @endif>{{ $sBuy ? number_format($sBuy) : '---' }}</span>
-                                <span class="text-[13px]" style="color: #FF7043;" @if($sSell) data-price="{{ $sSell }}" data-pkey="silver-{{ $unit }}-sell" @endif>{{ $sSell ? number_format($sSell) : '---' }}</span>
-                            </div>
-                        </div>
-                    @endforeach
+                    <table class="w-full table-fixed">
+                        <thead>
+                            <tr>
+                                <th class="text-left text-[10px] text-white/35 font-normal pb-1"></th>
+                                <th class="text-right text-[10px] text-white/35 font-normal pb-1 w-[28%]">BUY</th>
+                                <th class="text-right text-[10px] text-white/35 font-normal pb-1 w-[28%]">SELL</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($silverUnits as $unit => $label)
+                                @php
+                                    $sBuy = $silverPrices[$unit]['buy'] ?? null;
+                                    $sSell = $silverPrices[$unit]['sell'] ?? null;
+                                @endphp
+                                <tr class="border-b border-white/[0.07] last:border-b-0">
+                                    <td class="py-2 text-xs text-white/50">{{ $label }}</td>
+                                    <td class="py-2 text-right text-[13px] whitespace-nowrap" style="color: #4CAF50;" @if($sBuy) data-price="{{ $sBuy }}" data-pkey="silver-{{ $unit }}-buy" @endif>{{ $sBuy ? number_format($sBuy) : '---' }}</td>
+                                    <td class="py-2 text-right text-[13px] whitespace-nowrap" style="color: #FF7043;" @if($sSell) data-price="{{ $sSell }}" data-pkey="silver-{{ $unit }}-sell" @endif>{{ $sSell ? number_format($sSell) : '---' }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
                 </div>
             </div>
             <p class="text-center text-white/30 text-[11px] mt-4">Prices updated every 60 seconds from international markets. All amounts in PKR.</p>
@@ -295,8 +305,9 @@
                 <a href="/products" class="text-sm underline" style="color: #8B6914;">View All Products →</a>
             </div>
             <div class="flex flex-wrap gap-2 mb-6">
-                @foreach(['All', 'Gold Bars', 'Gold Coins', 'Silver Bars', 'Silver Coins', 'Jewelry'] as $i => $cat)
-                    <span class="px-4 py-1.5 rounded-full text-xs cursor-pointer {{ $i === 0 ? 'text-white' : 'text-gray-500 bg-white border border-gray-200' }}" @if($i === 0) style="background: #0D3D1F;" @endif>{{ $cat }}</span>
+                <a href="/products" class="px-4 py-1.5 rounded-full text-xs cursor-pointer text-white transition-colors" style="background: #0D3D1F;">All</a>
+                @foreach($productCategories as $cat)
+                    <a href="/products?category={{ $cat->slug }}" class="px-4 py-1.5 rounded-full text-xs cursor-pointer text-gray-500 bg-white border border-gray-200 transition-colors hover:border-gold hover:text-gold-dark">{{ $cat->name }}</a>
                 @endforeach
             </div>
             <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -433,32 +444,7 @@
     {{-- ================================================================ --}}
     {{-- TESTIMONIALS SECTION                                              --}}
     {{-- ================================================================ --}}
-    <section class="py-14 px-4 sm:px-6 lg:px-8" style="background: #F2EBD9;">
-        <div class="max-w-6xl mx-auto">
-            <div class="mb-10">
-                <div class="text-xs tracking-widest uppercase mb-1" style="color: #8B6914;">Customer Reviews</div>
-                <h2 class="text-2xl" style="font-weight: 400; color: #1A1A1A;">What Our Clients Say</h2>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
-                @foreach($testimonials as $review)
-                    <div class="bg-white rounded-lg p-5" style="border: 1px solid #E5DCC8;">
-                        <div class="text-sm mb-2.5" style="color: #C9A84C;">
-                            @for($i = 0; $i < $review->stars; $i++)★@endfor
-                            @for($i = $review->stars; $i < 5; $i++)☆@endfor
-                        </div>
-                        <p class="text-[13px] italic leading-relaxed mb-4" style="color: #6B6B6B;">"{{ $review->text }}"</p>
-                        <div class="flex items-center gap-2">
-                            <span class="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-medium" style="background: #C9A84C; color: #0A2E23;">{{ $review->initials }}</span>
-                            <div>
-                                <div class="text-xs font-medium" style="color: #1A1A1A;">{{ $review->name }}</div>
-                                <div class="text-[11px]" style="color: #6B6B6B;">{{ $review->location }}</div>
-                            </div>
-                        </div>
-                    </div>
-                @endforeach
-            </div>
-        </div>
-    </section>
+    @livewire('testimonial-section')
 
     <div class="h-[3px]" style="background: linear-gradient(90deg, transparent, #C9A84C, transparent);"></div>
 

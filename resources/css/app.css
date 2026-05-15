@@ -65,17 +65,21 @@
 }
 
 /* ── Price badge styles ── */
+/* Tight padding by default (mobile-first) so 5-digit prices + buy/sell columns
+   fit inside the ~300px usable width of phone screens. Expands at sm+. */
 .price-badge-buy {
-    @apply inline-flex items-center gap-1 px-3 py-1 text-sm font-bold rounded-md;
+    @apply inline-flex items-center gap-0.5 px-1.5 py-0.5 text-xs font-bold rounded-md sm:gap-1 sm:px-3 sm:py-1 sm:text-sm;
     background: #E8F5E9;
     color: #1B5E20;
     border: 1px solid #A5D6A7;
+    white-space: nowrap;
 }
 .price-badge-sell {
-    @apply inline-flex items-center gap-1 px-3 py-1 text-sm font-bold rounded-md;
+    @apply inline-flex items-center gap-0.5 px-1.5 py-0.5 text-xs font-bold rounded-md sm:gap-1 sm:px-3 sm:py-1 sm:text-sm;
     background: #FFF3E0;
     color: #E65100;
     border: 1px solid #FFCC80;
+    white-space: nowrap;
 }
 
 /* ── Pulsing live dot ── */
@@ -177,3 +181,40 @@
 ::-webkit-scrollbar-track { background: var(--color-emerald-950); }
 ::-webkit-scrollbar-thumb { background: var(--color-emerald-700); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--color-gold); }
+
+/* ── Reviews marquee (vertical, two columns scrolling in opposite directions) ── */
+.reviews-track-wrap {
+    position: relative;
+    overflow: hidden;
+}
+.reviews-track {
+    display: flex;
+    flex-direction: column;
+    will-change: transform;
+}
+.reviews-track--up   { animation: reviews-scroll-up   22s linear infinite; }
+.reviews-track--down { animation: reviews-scroll-down 22s linear infinite; }
+
+@keyframes reviews-scroll-up {
+    0%   { transform: translateY(0); }
+    100% { transform: translateY(-50%); }
+}
+@keyframes reviews-scroll-down {
+    0%   { transform: translateY(-50%); }
+    100% { transform: translateY(0); }
+}
+
+/* Pause when the user hovers anywhere over the marquee region. */
+.reviews-marquee:hover .reviews-track {
+    animation-play-state: paused;
+}
+
+.review-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(139, 105, 20, 0.12);
+    border-color: #D4C39F;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .reviews-track--up, .reviews-track--down { animation: none; }
+}
