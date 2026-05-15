@@ -23,6 +23,15 @@ class ProductsPage extends Component
         $allPrices = $cacheManager->getAllPrices();
         $this->goldPrices = $allPrices['gold'] ?: [];
         $this->silverPrices = $allPrices['silver'] ?: [];
+
+        // Honour ?category=<slug> from incoming links (e.g. the home-page chips).
+        $slug = request()->query('category');
+        if ($slug && $slug !== 'all') {
+            $cat = ProductCategory::where('slug', $slug)->first();
+            if ($cat) {
+                $this->categoryId = (string) $cat->id;
+            }
+        }
     }
 
     public function setCategory(string $id): void

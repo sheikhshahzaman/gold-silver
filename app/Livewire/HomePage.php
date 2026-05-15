@@ -4,6 +4,7 @@ namespace App\Livewire;
 
 use App\Models\HeroSlide;
 use App\Models\Product;
+use App\Models\ProductCategory;
 use App\Models\Service;
 use App\Models\Setting;
 use App\Models\Testimonial;
@@ -37,6 +38,7 @@ class HomePage extends Component
         return view('livewire.home-page', [
             'heroSlides' => HeroSlide::active()->ordered()->limit(4)->get(),
             'products' => Product::with('productCategory')->active()->ordered()->limit(4)->get(),
+            'productCategories' => ProductCategory::active()->ordered()->get(),
             'services' => Service::active()->ordered()->get(),
             'testimonials' => Testimonial::active()->ordered()->get(),
             'trackRecord' => [
