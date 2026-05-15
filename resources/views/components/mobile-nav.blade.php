@@ -1,4 +1,8 @@
 {{-- Mobile Bottom Navigation --}}
+@php
+    $waNumber = preg_replace('/[^0-9]/', '', \App\Models\Setting::get('contact_whatsapp') ?? '');
+    $waHref = $waNumber ? 'https://wa.me/'.$waNumber : '#';
+@endphp
 <nav class="fixed bottom-0 left-0 right-0 z-50 bg-emerald-900 border-t border-gold/20 safe-area-inset-bottom">
     <div class="flex items-end justify-around px-2 pt-2 pb-2">
 
@@ -10,12 +14,12 @@
             <span class="text-[10px] font-medium">Scan</span>
         </a>
 
-        {{-- Buy --}}
-        <a href="/buy" class="flex flex-col items-center justify-center flex-1 py-1 {{ request()->is('buy') ? 'text-gold' : 'text-white/60' }}">
+        {{-- Shop --}}
+        <a href="/products" class="flex flex-col items-center justify-center flex-1 py-1 {{ request()->is('products*') ? 'text-gold' : 'text-white/60' }}">
             <svg class="w-5 h-5 mb-0.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 1 0-7.5 0v4.5m11.356-1.993 1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 0 1-1.12-1.243l1.264-12A1.125 1.125 0 0 1 5.513 7.5h12.974c.576 0 1.059.435 1.119 1.007Z" />
             </svg>
-            <span class="text-[10px] font-medium">Buy</span>
+            <span class="text-[10px] font-medium">Shop</span>
         </a>
 
         {{-- Spot / Live (Center - Raised) --}}
@@ -28,13 +32,12 @@
             <span class="text-[10px] font-medium {{ request()->is('live') ? 'text-gold' : 'text-white/60' }}">Spot</span>
         </a>
 
-        {{-- Sell --}}
-        <a href="/sell" class="flex flex-col items-center justify-center flex-1 py-1 {{ request()->is('sell') ? 'text-gold' : 'text-white/60' }}">
-            <svg class="w-5 h-5 mb-0.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z" />
-                <path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.008v.008H6V6z" />
+        {{-- WhatsApp --}}
+        <a href="{{ $waHref }}" @if($waNumber) target="_blank" rel="noopener" @endif class="flex flex-col items-center justify-center flex-1 py-1 text-white/60">
+            <svg class="w-5 h-5 mb-0.5" viewBox="0 0 24 24" fill="currentColor" style="color: #25D366;">
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/>
             </svg>
-            <span class="text-[10px] font-medium">Sell</span>
+            <span class="text-[10px] font-medium">WhatsApp</span>
         </a>
 
         {{-- More --}}
