@@ -174,7 +174,7 @@
                 {{-- updated timestamp removed --}}
             </section>
 
-            {{-- Section C: Silver Rates (PKR) - LIGHT CARD (mirrors gold layout) --}}
+            {{-- Section C: Silver Rates (PKR) - LIGHT CARD --}}
             <section class="glass-card p-3 sm:p-5 md:p-6" wire:key="silver-rates">
                 <div class="mb-5">
                     <h2 class="text-lg sm:text-xl font-bold flex items-center gap-2" style="color: #0A2E23;">
@@ -182,22 +182,6 @@
                         Silver (XAG)
                     </h2>
                     <div class="h-0.5 w-16 bg-gradient-to-r from-gray-400 to-transparent mt-1 rounded-full"></div>
-                </div>
-
-                {{-- Unit selector (same component the gold card uses) --}}
-                <div class="flex flex-wrap gap-2 mb-5">
-                    @foreach($this->goldTabs as $unitKey => $unitLabel)
-                        <button
-                            wire:click="selectUnit('{{ $unitKey }}')"
-                            class="px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200
-                                {{ $selectedUnit === $unitKey
-                                    ? 'text-white shadow-md'
-                                    : 'text-emerald-900/70 border border-emerald-900/20 hover:border-gold/50 hover:text-gold-dark bg-white' }}"
-                            @if($selectedUnit === $unitKey) style="background: linear-gradient(135deg, #0F3D2E, #0A2E23);" @endif
-                        >
-                            {{ $unitLabel }}
-                        </button>
-                    @endforeach
                 </div>
 
                 <div class="overflow-x-auto -mx-1 sm:mx-0">
@@ -211,30 +195,27 @@
                         </thead>
                         <tbody>
                             @php
-                                $silverKaratLabels = ['24k' => '24K', 'rawa' => 'Rawa', '22k' => '22K', '21k' => '21K', '18k' => '18K'];
+                                $silverUnitLabels = ['kg' => '1 KG', '10_tola' => '10 Tola', 'tola' => '1 Tola', '10_gram' => '10 Gram', 'gram' => '1 Gram'];
                             @endphp
-                            @foreach($silverKaratLabels as $karat => $label)
+                            @foreach($silverUnitLabels as $unit => $label)
                                 @php
-                                    $buyPrice = $silverPrices[$karat][$selectedUnit]['buy'] ?? null;
-                                    $sellPrice = $silverPrices[$karat][$selectedUnit]['sell'] ?? null;
+                                    $buyPrice = $silverPrices[$unit]['buy'] ?? null;
+                                    $sellPrice = $silverPrices[$unit]['sell'] ?? null;
                                 @endphp
-                                <tr class="border-b transition-colors hover:bg-cream/50" style="border-color: #F0E8DB;" wire:key="silver-{{ $karat }}-{{ $selectedUnit }}">
+                                <tr class="border-b transition-colors hover:bg-cream/50" style="border-color: #F0E8DB;" wire:key="silver-{{ $unit }}">
                                     <td class="py-3 sm:py-3.5 px-1.5 sm:px-3">
-                                        <div class="flex flex-col sm:flex-row sm:items-center sm:gap-2 leading-tight">
-                                            <span class="font-bold" style="color: #0A2E23;">{{ $label }}</span>
-                                            <span class="text-[10px] sm:text-xs" style="color: #999;">({{ $this->selectedUnitLabel }})</span>
-                                        </div>
+                                        <span class="font-bold" style="color: #0A2E23;">{{ $label }}</span>
                                     </td>
                                     <td class="text-right py-3 sm:py-3.5 px-1.5 sm:px-3">
                                         @if($buyPrice !== null)
-                                            <span class="price-badge-buy" data-price="{{ $buyPrice }}" data-pkey="silver-{{ $karat }}-{{ $selectedUnit }}-buy">Rs {{ number_format($buyPrice) }}</span>
+                                            <span class="price-badge-buy" data-price="{{ $buyPrice }}" data-pkey="silver-{{ $unit }}-buy">Rs {{ number_format($buyPrice) }}</span>
                                         @else
                                             <span style="color: #ccc;">&mdash;</span>
                                         @endif
                                     </td>
                                     <td class="text-right py-3 sm:py-3.5 px-1.5 sm:px-3">
                                         @if($sellPrice !== null)
-                                            <span class="price-badge-sell" data-price="{{ $sellPrice }}" data-pkey="silver-{{ $karat }}-{{ $selectedUnit }}-sell">Rs {{ number_format($sellPrice) }}</span>
+                                            <span class="price-badge-sell" data-price="{{ $sellPrice }}" data-pkey="silver-{{ $unit }}-sell">Rs {{ number_format($sellPrice) }}</span>
                                         @else
                                             <span style="color: #ccc;">&mdash;</span>
                                         @endif
@@ -245,9 +226,7 @@
                     </table>
                 </div>
 
-                <p class="mt-4 text-xs italic" style="color: #999;">
-                    Prices calculated for {{ $this->selectedUnitLabel }} quantity
-                </p>
+                {{-- updated timestamp removed --}}
             </section>
 
         </div>

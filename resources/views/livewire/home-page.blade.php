@@ -110,8 +110,8 @@
     {{-- ================================================================ --}}
     @php
         $gold24kBuy = $goldPrices['24k']['tola']['buy'] ?? null;
-        $silver1kgBuy = $silverPrices['24k']['kg']['buy'] ?? null;
-        $silver1kgSell = $silverPrices['24k']['kg']['sell'] ?? null;
+        $silver1kgBuy = $silverPrices['kg']['buy'] ?? null;
+        $silver1kgSell = $silverPrices['kg']['sell'] ?? null;
         $gold22kBuy = $goldPrices['22k']['tola']['buy'] ?? null;
         $xauUsd = $internationalRates['xau_usd'] ?? null;
         $xagUsd = $internationalRates['xag_usd'] ?? null;
@@ -273,8 +273,8 @@
                         <tbody>
                             @foreach($silverUnits as $unit => $label)
                                 @php
-                                    $sBuy = $silverPrices['24k'][$unit]['buy'] ?? null;
-                                    $sSell = $silverPrices['24k'][$unit]['sell'] ?? null;
+                                    $sBuy = $silverPrices[$unit]['buy'] ?? null;
+                                    $sSell = $silverPrices[$unit]['sell'] ?? null;
                                 @endphp
                                 <tr class="border-b border-white/[0.07] last:border-b-0">
                                     <td class="py-2 text-xs text-white/50">{{ $label }}</td>
@@ -320,16 +320,12 @@
                         $livePrice = null; $liveSell = null;
                         if ($prod->price_type === 'live' && $prod->price_key) {
                             $parts = explode('.', $prod->price_key);
-                            // gold.<karat>.<unit> e.g. gold.24k.tola
-                            // silver.<karat>.<unit> e.g. silver.24k.kg (new structure)
-                            // silver.<unit> e.g. silver.kg (legacy; defaults to 24k)
                             if (count($parts) === 3) {
-                                $bucket = $parts[0] === 'silver' ? $silverPrices : $goldPrices;
-                                $livePrice = $bucket[$parts[1]][$parts[2]]['buy'] ?? null;
-                                $liveSell = $bucket[$parts[1]][$parts[2]]['sell'] ?? null;
+                                $livePrice = $goldPrices[$parts[1]][$parts[2]]['buy'] ?? null;
+                                $liveSell = $goldPrices[$parts[1]][$parts[2]]['sell'] ?? null;
                             } elseif (count($parts) === 2 && $parts[0] === 'silver') {
-                                $livePrice = $silverPrices['24k'][$parts[1]]['buy'] ?? null;
-                                $liveSell = $silverPrices['24k'][$parts[1]]['sell'] ?? null;
+                                $livePrice = $silverPrices[$parts[1]]['buy'] ?? null;
+                                $liveSell = $silverPrices[$parts[1]]['sell'] ?? null;
                             }
                         }
                         $showPrice = $prod->productCategory?->show_live_price ?? false;

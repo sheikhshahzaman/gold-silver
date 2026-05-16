@@ -124,8 +124,9 @@
                         </button>
                     </div>
 
-                    {{-- Karat Selection (applies to both gold and silver) --}}
-                    <div style="background: #FFFFFF; border-radius: 16px; padding: 1.25rem 1.5rem; margin-bottom: 1.75rem; border: 1px solid #EDE6D6; box-shadow: 0 2px 10px rgba(0,0,0,0.03); animation: fadeInUp 0.3s ease-out;">
+                    {{-- Karat Selection (Gold only) --}}
+                    @if($selectedMetal === 'gold')
+                        <div style="background: #FFFFFF; border-radius: 16px; padding: 1.25rem 1.5rem; margin-bottom: 1.75rem; border: 1px solid #EDE6D6; box-shadow: 0 2px 10px rgba(0,0,0,0.03); animation: fadeInUp 0.3s ease-out;">
                             <label style="font-size: 0.8rem; font-weight: 600; color: #0A2E23; text-transform: uppercase; letter-spacing: 0.06em; display: block; margin-bottom: 0.75rem;">Select Karat</label>
                             <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
                                 @foreach(['24k' => '24K', 'rawa' => 'Rawa', '22k' => '22K', '21k' => '21K', '18k' => '18K'] as $key => $label)
@@ -141,6 +142,7 @@
                                 @endforeach
                             </div>
                         </div>
+                    @endif
 
                     {{-- Continue button --}}
                     <button wire:click="nextStep"
@@ -169,7 +171,7 @@
                                 Gold {{ strtoupper($selectedKarat) }}
                             @else
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/></svg>
-                                Silver {{ strtoupper($selectedKarat) }}
+                                Silver
                             @endif
                         </span>
                     </div>
@@ -234,7 +236,7 @@
                                 <div style="display: flex; align-items: center; justify-content: center; gap: 0.4rem; margin-top: 0.75rem;">
                                     <div style="width: 4px; height: 4px; border-radius: 50%; background: rgba(201,168,76,0.4);"></div>
                                     <p style="font-size: 0.75rem; color: rgba(255,255,255,0.45); margin: 0;">
-                                        {{ $quantity }} x {{ $selectedMetal === 'gold' ? 'Gold' : 'Silver' }} {{ strtoupper($selectedKarat) }}
+                                        {{ $quantity }} x @if($selectedMetal === 'gold') Gold {{ strtoupper($selectedKarat) }} @else Silver @endif
                                         ({{ str_replace('_', ' ', ucfirst($selectedUnit)) }})
                                     </p>
                                     <div style="width: 4px; height: 4px; border-radius: 50%; background: rgba(201,168,76,0.4);"></div>
