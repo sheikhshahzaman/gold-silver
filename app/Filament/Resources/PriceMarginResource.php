@@ -65,20 +65,12 @@ class PriceMarginResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('metal')
-                    ->label('Metal')
+                Tables\Columns\TextColumn::make('item')
+                    ->label('Item')
                     ->badge()
-                    ->color(fn (string $state): string => match ($state) {
-                        'gold' => 'warning',
-                        'silver' => 'gray',
-                        default => 'primary',
-                    })
-                    ->formatStateUsing(fn (string $state): string => ucfirst($state))
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('karat')
-                    ->label('Karat')
-                    ->formatStateUsing(fn (?string $state): string => $state ?: '—')
-                    ->sortable(),
+                    ->state(fn ($record) => ucfirst($record->metal) . ($record->karat ? ' — ' . strtoupper($record->karat) : ''))
+                    ->color(fn ($record): string => $record->metal === 'gold' ? 'warning' : 'gray')
+                    ->sortable(['metal', 'karat']),
                 Tables\Columns\TextColumn::make('buy_margin')
                     ->label('Buy Margin (Rs)')
                     ->money('PKR')

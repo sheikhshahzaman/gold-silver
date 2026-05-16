@@ -19,6 +19,18 @@ class EditPriceMargin extends EditRecord
         return [];
     }
 
+    public function getTitle(): string
+    {
+        $record = $this->record;
+        if (!$record) {
+            return 'Edit Price Margin';
+        }
+        // Silver has no karat -- render it as just "Silver Margin". Gold rows
+        // get "Gold 24K Margin" etc. so it's obvious which row you're editing.
+        $label = ucfirst($record->metal) . ($record->karat ? ' ' . strtoupper($record->karat) : '');
+        return $label . ' Margin';
+    }
+
     protected function mutateFormDataBeforeSave(array $data): array
     {
         $data['updated_by'] = Auth::id();
