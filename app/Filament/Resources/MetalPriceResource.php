@@ -101,6 +101,7 @@ class MetalPriceResource extends Resource
                     ->sortable(),
                 Tables\Columns\TextColumn::make('karat')
                     ->label('Karat')
+                    ->formatStateUsing(fn (?string $state): string => $state ?: '—')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('unit')
                     ->label('Unit')

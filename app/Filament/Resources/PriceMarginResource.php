@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\PriceMarginResource\Pages;
 use App\Models\PriceMargin;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
@@ -33,12 +34,14 @@ class PriceMarginResource extends Resource
                     ->description('Current Market Price + Your Margin = Displayed Price. Use a positive value to add to the live rate, or a negative value (e.g. -500) to deduct from it. Margins are stored per tola and automatically converted for other units.')
                     ->icon('heroicon-o-information-circle')
                     ->schema([
-                        TextInput::make('metal')
-                            ->disabled()
-                            ->dehydrated(false),
-                        TextInput::make('karat')
-                            ->disabled()
-                            ->dehydrated(false),
+                        // Single read-only line so silver (which has no karat) doesn't
+                        // render an awkward empty Karat field next to Metal.
+                        Placeholder::make('item')
+                            ->label('You are editing')
+                            ->content(fn ($record) => $record
+                                ? (ucfirst($record->metal) . ($record->karat ? ' — ' . strtoupper($record->karat) : ''))
+                                : '—')
+                            ->columnSpanFull(),
                         TextInput::make('buy_margin')
                             ->label('Buy Margin (per Tola)')
                             ->helperText('Positive adds to live rate · Negative deducts (e.g. -500)')
@@ -74,6 +77,7 @@ class PriceMarginResource extends Resource
                     ->sortable(),
                 Tables\Columns\TextColumn::make('karat')
                     ->label('Karat')
+                    ->formatStateUsing(fn (?string $state): string => $state ?: '—')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('buy_margin')
                     ->label('Buy Margin (Rs)')
