@@ -49,11 +49,12 @@
                             if ($prod->price_type === 'live' && $prod->price_key) {
                                 $parts = explode('.', $prod->price_key);
                                 if (count($parts) === 3) {
-                                    $livePrice = $goldPrices[$parts[1]][$parts[2]]['buy'] ?? null;
-                                    $liveSell = $goldPrices[$parts[1]][$parts[2]]['sell'] ?? null;
+                                    $bucket = $parts[0] === 'silver' ? $silverPrices : $goldPrices;
+                                    $livePrice = $bucket[$parts[1]][$parts[2]]['buy'] ?? null;
+                                    $liveSell = $bucket[$parts[1]][$parts[2]]['sell'] ?? null;
                                 } elseif (count($parts) === 2 && $parts[0] === 'silver') {
-                                    $livePrice = $silverPrices[$parts[1]]['buy'] ?? null;
-                                    $liveSell = $silverPrices[$parts[1]]['sell'] ?? null;
+                                    $livePrice = $silverPrices['24k'][$parts[1]]['buy'] ?? null;
+                                    $liveSell = $silverPrices['24k'][$parts[1]]['sell'] ?? null;
                                 }
                             }
                         @endphp

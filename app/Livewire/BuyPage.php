@@ -56,8 +56,8 @@ class BuyPage extends Component
     public array $goldPrices = [];
 
     /**
-     * Silver prices from cache.
-     * Structure: ['tola' => ['buy' => ..., 'sell' => ...], ...]
+     * Silver prices from cache. Now mirrors the gold structure (keyed by karat then unit).
+     * Structure: ['24k' => ['tola' => ['buy' => ..., 'sell' => ...], ...], ...]
      */
     public array $silverPrices = [];
 
@@ -101,7 +101,9 @@ class BuyPage extends Component
     {
         $this->selectedMetal = $metal;
 
-        if ($metal === 'silver') {
+        // Both metals support the same karat list now, so we don't force a reset.
+        // Just guard against invalid values lingering from query string input.
+        if (!in_array($this->selectedKarat, ['24k', 'rawa', '22k', '21k', '18k'])) {
             $this->selectedKarat = '24k';
         }
 
@@ -193,11 +195,8 @@ class BuyPage extends Component
      */
     protected function getUnitBuyPrice(): ?float
     {
-        if ($this->selectedMetal === 'gold') {
-            return $this->goldPrices[$this->selectedKarat][$this->selectedUnit]['buy'] ?? null;
-        }
-
-        return $this->silverPrices[$this->selectedUnit]['buy'] ?? null;
+        $bucket = $this->selectedMetal === 'gold' ? $this->goldPrices : $this->silverPrices;
+        return $bucket[$this->selectedKarat][$this->selectedUnit]['buy'] ?? null;
     }
 
     /**
@@ -256,7 +255,9 @@ class BuyPage extends Component
             ->get();
 
         foreach ($prices as $price) {
-            $silverData[$price->unit] = [
+            // NULL karat from pre-migration rows is treated as 24k.
+            $karat = $price->karat ?: '24k';
+            $silverData[$karat][$price->unit] = [
                 'buy' => (float) $price->buy_price,
                 'sell' => (float) $price->sell_price,
             ];
@@ -275,7 +276,7 @@ class BuyPage extends Component
 
         $order = Order::create([
             'metal' => $this->selectedMetal,
-            'karat' => $this->selectedMetal === 'gold' ? $this->selectedKarat : null,
+            'karat' => $this->selectedKarat,
             'quantity' => $this->quantity,
             'unit' => $this->selectedUnit,
             'type' => 'buy',

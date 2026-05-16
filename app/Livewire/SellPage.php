@@ -55,7 +55,8 @@ class SellPage extends Component
     public array $goldPrices = [];
 
     /**
-     * Silver prices from cache.
+     * Silver prices from cache. Mirrors the gold structure (keyed by karat then unit).
+     * Structure: ['24k' => ['tola' => ['buy' => ..., 'sell' => ...], ...], ...]
      */
     public array $silverPrices = [];
 
@@ -72,7 +73,8 @@ class SellPage extends Component
     {
         $this->selectedMetal = $metal;
 
-        if ($metal === 'silver') {
+        // Both metals expose the same 5 karats now; just guard against bad input.
+        if (!in_array($this->selectedKarat, ['24k', 'rawa', '22k', '21k', '18k'])) {
             $this->selectedKarat = '24k';
         }
 
@@ -164,11 +166,8 @@ class SellPage extends Component
      */
     protected function getUnitSellPrice(): ?float
     {
-        if ($this->selectedMetal === 'gold') {
-            return $this->goldPrices[$this->selectedKarat][$this->selectedUnit]['sell'] ?? null;
-        }
-
-        return $this->silverPrices[$this->selectedUnit]['sell'] ?? null;
+        $bucket = $this->selectedMetal === 'gold' ? $this->goldPrices : $this->silverPrices;
+        return $bucket[$this->selectedKarat][$this->selectedUnit]['sell'] ?? null;
     }
 
     /**
@@ -227,7 +226,8 @@ class SellPage extends Component
             ->get();
 
         foreach ($prices as $price) {
-            $silverData[$price->unit] = [
+            $karat = $price->karat ?: '24k';
+            $silverData[$karat][$price->unit] = [
                 'buy' => (float) $price->buy_price,
                 'sell' => (float) $price->sell_price,
             ];
@@ -246,7 +246,7 @@ class SellPage extends Component
 
         $order = Order::create([
             'metal' => $this->selectedMetal,
-            'karat' => $this->selectedMetal === 'gold' ? $this->selectedKarat : null,
+            'karat' => $this->selectedKarat,
             'quantity' => $this->quantity,
             'unit' => $this->selectedUnit,
             'type' => 'sell',

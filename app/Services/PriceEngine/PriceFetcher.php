@@ -30,6 +30,14 @@ class PriceFetcher
     private const SILVER_UNITS = ['tola', '10_tola', '10_gram', '5_gram', 'gram', 'kg'];
 
     /**
+     * Silver karats. Same shape as gold so admin can configure per-karat margins
+     * and the frontend can mirror the gold karat selector. 24K is treated as the
+     * .999-fine market base; the others are derived using the standard purity
+     * ratios from PriceCalculator::deriveAllKaratPrices().
+     */
+    private const SILVER_KARATS = ['24k', 'rawa', '22k', '21k', '18k'];
+
+    /**
      * Currency pairs to store.
      */
     private const CURRENCY_PAIRS = [
@@ -356,73 +364,86 @@ class PriceFetcher
         $now = now();
         $cacheData = [];
 
-        $silverPerTola = null;
+        // Establish the 24K (pure) anchor for silver.
+        $silver24kBuyPerTola = null;
+        $silver24kSellPerTola = null;
 
         if (!empty($result['silver_pkr_direct']) && !empty($result['silver_prices'])) {
-            // Silver from PakGold now has 'reti' and 'pees' sub-keys
-            $silverPerTola = $result['silver_prices']['reti']['buy_per_tola']
+            // PakGold's localSilverBuy/Sell is the pure-silver retail market rate.
+            $silver24kBuyPerTola = $result['silver_prices']['reti']['buy_per_tola']
                 ?? $result['silver_prices']['pees']['buy_per_tola']
+                ?? null;
+            $silver24kSellPerTola = $result['silver_prices']['reti']['sell_per_tola']
+                ?? $result['silver_prices']['pees']['sell_per_tola']
                 ?? null;
         }
 
-        if ($silverPerTola === null && isset($result['xag_usd']) && isset($result['usd_pkr'])) {
-            $silverPerTola = $this->calculator->ounceToPkrPerTola(
+        if ($silver24kBuyPerTola === null && isset($result['xag_usd']) && isset($result['usd_pkr'])) {
+            $silver24kBuyPerTola = $this->calculator->ounceToPkrPerTola(
                 $result['xag_usd'],
                 $result['usd_pkr']
             );
         }
 
-        if ($silverPerTola === null || $silverPerTola <= 0) {
+        if ($silver24kBuyPerTola === null || $silver24kBuyPerTola <= 0) {
             return $cacheData;
         }
 
-        // Get silver margins (silver has a single margin row regardless of karat key)
-        $silverMargin = $margins['silver'] ? reset($margins['silver']) : null;
-        $buyMargin = $silverMargin['buy_margin'] ?? 0;
-        $sellMargin = $silverMargin['sell_margin'] ?? 0;
+        // Silver doesn't have a real per-karat market (the source only quotes a
+        // single value), so we derive the other karats with the same purity
+        // multipliers gold uses. The output mirrors the gold structure exactly
+        // so the frontend can treat both metals uniformly.
+        $silverBuyByKarat = $this->calculator->deriveAllKaratPrices($silver24kBuyPerTola);
+        $silverSellByKarat = $silver24kSellPerTola
+            ? $this->calculator->deriveAllKaratPrices($silver24kSellPerTola)
+            : $silverBuyByKarat;
 
-        // Derive all unit prices
-        $unitPrices = $this->calculator->deriveAllUnitPrices($silverPerTola);
+        foreach (self::SILVER_KARATS as $karat) {
+            $buyPerTola = $silverBuyByKarat[$karat];
+            $sellPerTola = $silverSellByKarat[$karat];
 
-        // Get sell price per tola (from scraper or same as buy)
-        $silverSellPerTola = null;
-        if (!empty($result['silver_pkr_direct']) && !empty($result['silver_prices'])) {
-            $silverSellPerTola = $result['silver_prices']['reti']['sell_per_tola']
-                ?? $result['silver_prices']['pees']['sell_per_tola']
-                ?? null;
-        }
-        $sellUnitPrices = $silverSellPerTola
-            ? $this->calculator->deriveAllUnitPrices($silverSellPerTola)
-            : $unitPrices;
+            // Per-karat silver margins (added in 2026_05_17 migration). Falls
+            // back to the legacy single-row silver margin if a karat-specific
+            // row isn't configured yet.
+            $buyMargin = $margins['silver'][$karat]['buy_margin']
+                ?? $margins['silver']['']['buy_margin']
+                ?? 0;
+            $sellMargin = $margins['silver'][$karat]['sell_margin']
+                ?? $margins['silver']['']['sell_margin']
+                ?? 0;
 
-        foreach (self::SILVER_UNITS as $unit) {
-            $basePrice = $unitPrices[$unit];
-            $baseSellPrice = $sellUnitPrices[$unit];
+            $buyUnitPrices = $this->calculator->deriveAllUnitPrices($buyPerTola);
+            $sellUnitPrices = $this->calculator->deriveAllUnitPrices($sellPerTola);
 
-            $buyPrice = $this->calculator->applyMargin($basePrice, $buyMargin, $unit);
-            $sellPrice = $this->calculator->applyMargin($baseSellPrice, $sellMargin, $unit);
+            foreach (self::SILVER_UNITS as $unit) {
+                $buyBase = $buyUnitPrices[$unit];
+                $sellBase = $sellUnitPrices[$unit];
 
-            $cacheData[$unit] = [
-                'buy' => $buyPrice,
-                'sell' => $sellPrice,
-                'base' => $basePrice,
-            ];
+                $buyPrice = $this->calculator->applyMargin($buyBase, $buyMargin, $unit);
+                $sellPrice = $this->calculator->applyMargin($sellBase, $sellMargin, $unit);
 
-            MetalPrice::updateOrCreate(
-                [
-                    'metal' => 'silver',
-                    'type' => 'local',
-                    'karat' => null,
-                    'unit' => $unit,
-                    'fetched_at' => $now,
-                ],
-                [
-                    'buy_price' => $buyPrice,
-                    'sell_price' => $sellPrice,
-                    'currency' => 'PKR',
-                    'source' => $result['source'],
-                ],
-            );
+                $cacheData[$karat][$unit] = [
+                    'buy' => $buyPrice,
+                    'sell' => $sellPrice,
+                    'base' => $buyBase,
+                ];
+
+                MetalPrice::updateOrCreate(
+                    [
+                        'metal' => 'silver',
+                        'type' => 'local',
+                        'karat' => $karat,
+                        'unit' => $unit,
+                        'fetched_at' => $now,
+                    ],
+                    [
+                        'buy_price' => $buyPrice,
+                        'sell_price' => $sellPrice,
+                        'currency' => 'PKR',
+                        'source' => $result['source'],
+                    ],
+                );
+            }
         }
 
         return $cacheData;

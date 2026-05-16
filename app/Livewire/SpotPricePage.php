@@ -21,8 +21,8 @@ class SpotPricePage extends Component
     public array $goldPrices = [];
 
     /**
-     * Silver prices keyed by unit.
-     * Structure: ['tola' => ['buy' => ..., 'sell' => ...], ...]
+     * Silver prices keyed by karat then unit (mirrors gold structure).
+     * Structure: ['24k' => ['tola' => ['buy' => ..., 'sell' => ...], ...], ...]
      */
     public array $silverPrices = [];
 
@@ -167,6 +167,7 @@ class SpotPricePage extends Component
 
     /**
      * Fallback: load latest silver prices from the database if cache is empty.
+     * Returns the same karat-then-unit shape as gold.
      */
     private function loadSilverFromDatabase(): array
     {
@@ -183,7 +184,9 @@ class SpotPricePage extends Component
             ->get();
 
         foreach ($prices as $price) {
-            $silverData[$price->unit] = [
+            // Legacy rows with NULL karat default to 24k so old data stays usable.
+            $karat = $price->karat ?: '24k';
+            $silverData[$karat][$price->unit] = [
                 'buy' => (float) $price->buy_price,
                 'sell' => (float) $price->sell_price,
             ];

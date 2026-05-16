@@ -166,9 +166,8 @@
                         </button>
                     </div>
 
-                    {{-- Karat selection (only for gold) --}}
-                    @if($selectedMetal === 'gold')
-                        <div style="background: #FFFFFF; border-radius: 1rem; padding: 1.25rem 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border: 1px solid #E8DFD0;">
+                    {{-- Karat selection (applies to both gold and silver) --}}
+                    <div style="background: #FFFFFF; border-radius: 1rem; padding: 1.25rem 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border: 1px solid #E8DFD0;">
                             <label style="font-size: 0.8rem; font-weight: 600; color: #0A2E23; text-transform: uppercase; letter-spacing: 0.06em; display: block; margin-bottom: 0.75rem;">Select Karat</label>
                             <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
                                 @foreach(['24k' => '24K', 'rawa' => 'Rawa', '22k' => '22K', '21k' => '21K', '18k' => '18K'] as $key => $label)
@@ -190,7 +189,6 @@
                                 @endforeach
                             </div>
                         </div>
-                    @endif
 
                     {{-- Continue button (gold gradient) --}}
                     <button wire:click="nextStep"
@@ -238,7 +236,7 @@
                                     <svg style="width: 0.9rem; height: 0.9rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                                         <circle cx="12" cy="12" r="10"/>
                                     </svg>
-                                    Silver
+                                    Silver {{ strtoupper($selectedKarat) }}
                                 @endif
                             </span>
                         </div>
@@ -343,7 +341,7 @@
                             </p>
                             <p style="font-size: 0.75rem; color: rgba(255,255,255,0.4); margin: 0.5rem 0 0;">
                                 {{ $quantity }} x
-                                @if($selectedMetal === 'gold') Gold {{ strtoupper($selectedKarat) }} @else Silver @endif
+                                {{ $selectedMetal === 'gold' ? 'Gold' : 'Silver' }} {{ strtoupper($selectedKarat) }}
                                 ({{ str_replace('_', ' ', ucfirst($selectedUnit)) }})
                             </p>
                         @else
