@@ -25,10 +25,16 @@ class EditPriceMargin extends EditRecord
         if (!$record) {
             return 'Edit Price Margin';
         }
-        // Silver has no karat -- render it as just "Silver Margin". Gold rows
-        // get "Gold 24K Margin" etc. so it's obvious which row you're editing.
-        $label = ucfirst($record->metal) . ($record->karat ? ' ' . strtoupper($record->karat) : '');
-        return $label . ' Margin';
+        // Gold: "Gold 24K Margin", "Gold Rawa Margin", etc.
+        // Silver: "Silver 1 Tola Margin", "Silver 1 KG Margin", etc.
+        $metal = ucfirst($record->metal);
+        if ($record->karat) {
+            return $metal . ' ' . strtoupper($record->karat) . ' Margin';
+        }
+        if ($record->unit) {
+            return $metal . ' ' . PriceMarginResource::unitLabel($record->unit) . ' Margin';
+        }
+        return $metal . ' Margin';
     }
 
     protected function mutateFormDataBeforeSave(array $data): array

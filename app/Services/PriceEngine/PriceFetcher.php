@@ -376,15 +376,14 @@ class PriceFetcher
             return $cacheData;
         }
 
-        // Get silver margins (silver has a single margin row regardless of karat key)
-        $silverMargin = $margins['silver'] ? reset($margins['silver']) : null;
-        $buyMargin = $silverMargin['buy_margin'] ?? 0;
-        $sellMargin = $silverMargin['sell_margin'] ?? 0;
+        // Silver margins are now configured per unit (1 KG, 10 Tola, 1 Tola,
+        // 10 Gram, 5 Gram, 1 Gram). Each row's value is added directly to that
+        // unit's market price -- no tola-to-unit conversion happens here.
+        $silverMarginsByUnit = $margins['silver_by_unit'] ?? [];
 
-        // Derive all unit prices
+        // Derive base buy/sell unit prices (no margin yet).
         $unitPrices = $this->calculator->deriveAllUnitPrices($silverPerTola);
 
-        // Get sell price per tola (from scraper or same as buy)
         $silverSellPerTola = null;
         if (!empty($result['silver_pkr_direct']) && !empty($result['silver_prices'])) {
             $silverSellPerTola = $result['silver_prices']['reti']['sell_per_tola']
@@ -399,8 +398,12 @@ class PriceFetcher
             $basePrice = $unitPrices[$unit];
             $baseSellPrice = $sellUnitPrices[$unit];
 
-            $buyPrice = $this->calculator->applyMargin($basePrice, $buyMargin, $unit);
-            $sellPrice = $this->calculator->applyMargin($baseSellPrice, $sellMargin, $unit);
+            // Per-unit margin, applied directly to that unit's price.
+            $buyMarginForUnit  = $silverMarginsByUnit[$unit]['buy_margin']  ?? 0;
+            $sellMarginForUnit = $silverMarginsByUnit[$unit]['sell_margin'] ?? 0;
+
+            $buyPrice  = round($basePrice + $buyMarginForUnit, 2);
+            $sellPrice = round($baseSellPrice + $sellMarginForUnit, 2);
 
             $cacheData[$unit] = [
                 'buy' => $buyPrice,
@@ -487,15 +490,22 @@ class PriceFetcher
      */
     private function loadMargins(): array
     {
-        $margins = ['gold' => [], 'silver' => []];
+        // Gold margins are keyed by karat (one row covers all units via per-tola conversion).
+        // Silver margins are keyed by unit (one row per weight category: tola, kg, 10_gram, ...).
+        $margins = ['gold' => [], 'silver_by_unit' => []];
 
-        $records = PriceMargin::all();
-
-        foreach ($records as $record) {
-            $margins[$record->metal][strtolower($record->karat ?? '')] = [
-                'buy_margin' => (float) $record->buy_margin,
-                'sell_margin' => (float) $record->sell_margin,
-            ];
+        foreach (PriceMargin::all() as $record) {
+            if ($record->metal === 'gold') {
+                $margins['gold'][strtolower($record->karat ?? '')] = [
+                    'buy_margin' => (float) $record->buy_margin,
+                    'sell_margin' => (float) $record->sell_margin,
+                ];
+            } elseif ($record->metal === 'silver') {
+                $margins['silver_by_unit'][$record->unit ?? ''] = [
+                    'buy_margin' => (float) $record->buy_margin,
+                    'sell_margin' => (float) $record->sell_margin,
+                ];
+            }
         }
 
         return $margins;

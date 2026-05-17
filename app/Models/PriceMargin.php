@@ -22,6 +22,7 @@ class PriceMargin extends Model
     protected $fillable = [
         'metal',
         'karat',
+        'unit',
         'buy_margin',
         'sell_margin',
         'updated_by',
