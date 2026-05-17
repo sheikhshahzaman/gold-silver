@@ -186,29 +186,25 @@
    ║ MOTION LAYER  — scroll reveals, hero 3D bar, magnetic/tilt utilities  ║
    ╚════════════════════════════════════════════════════════════════════════╝ */
 
-/* Scroll-reveal: initial hidden state for any [data-reveal] element. The
-   variant attribute value picks the animation direction. */
-[data-reveal] {
-    opacity: 0;
-    transform: translate3d(0, 24px, 0);
-    transition: opacity 800ms cubic-bezier(0.22, 1, 0.36, 1),
-                transform 900ms cubic-bezier(0.22, 1, 0.36, 1);
-    will-change: opacity, transform;
-}
-[data-reveal="fade"]  { transform: none; }
-[data-reveal="left"]  { transform: translate3d(-32px, 0, 0); }
-[data-reveal="right"] { transform: translate3d(32px, 0, 0); }
-[data-reveal="scale"] { transform: scale(0.92); opacity: 0; }
-[data-reveal].reveal-in,
-[data-reveal-stagger] > .reveal-in {
-    opacity: 1;
-    transform: none;
-}
-[data-reveal-stagger] > * {
-    opacity: 0;
-    transform: translate3d(0, 18px, 0);
-    transition: opacity 700ms cubic-bezier(0.22, 1, 0.36, 1),
-                transform 800ms cubic-bezier(0.22, 1, 0.36, 1);
+/* Scroll-reveal — fully ADDITIVE.
+   Default state: elements are visible. JS may opt them in to a one-shot
+   entrance animation by adding [data-reveal-armed]. If JS never runs (or
+   the observer fails), nothing is hidden — the page is always usable. */
+@keyframes reveal-up    { from { opacity: 0; transform: translate3d(0, 24px, 0); } to { opacity: 1; transform: none; } }
+@keyframes reveal-fade  { from { opacity: 0; }                                       to { opacity: 1; } }
+@keyframes reveal-left  { from { opacity: 0; transform: translate3d(-32px, 0, 0); } to { opacity: 1; transform: none; } }
+@keyframes reveal-right { from { opacity: 0; transform: translate3d(32px, 0, 0); }  to { opacity: 1; transform: none; } }
+@keyframes reveal-scale { from { opacity: 0; transform: scale(0.94); }              to { opacity: 1; transform: none; } }
+
+[data-reveal-armed]                 { animation: reveal-up    900ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+[data-reveal="fade"][data-reveal-armed]  { animation-name: reveal-fade; }
+[data-reveal="left"][data-reveal-armed]  { animation-name: reveal-left; }
+[data-reveal="right"][data-reveal-armed] { animation-name: reveal-right; }
+[data-reveal="scale"][data-reveal-armed] { animation-name: reveal-scale; }
+
+[data-reveal-stagger] > .reveal-stagger-armed {
+    animation: reveal-up 800ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: var(--stagger-delay, 0ms);
 }
 
 /* Magnetic / tilt — smooth easing on the transform so the JS only writes
@@ -365,6 +361,355 @@
     .scroll-cue::after {
         animation: none;
     }
+}
+
+/* ╔════════════════════════════════════════════════════════════════════════╗
+   ║ EDITORIAL THEME  — Eluxee-inspired luxury layout                      ║
+   ╚════════════════════════════════════════════════════════════════════════╝ */
+
+:root {
+    --ivory:     #F5F1E8;
+    --cream:     #EDE6D3;
+    --bone:      #FAF7F0;
+    --espresso:  #1A1410;
+    --ink:       #2A1F18;
+    --gold-100:  #F5DD8E;
+    --gold-300:  #E8C96A;
+    --gold-500:  #C9A84C;
+    --gold-700:  #8B6914;
+    --emerald:   #0A2E23;
+}
+
+.font-display {
+    font-family: 'Cormorant Garamond', 'Times New Roman', Georgia, serif;
+    font-weight: 400;
+    letter-spacing: -0.01em;
+}
+.font-display-italic {
+    font-family: 'Cormorant Garamond', 'Times New Roman', Georgia, serif;
+    font-style: italic;
+    font-weight: 300;
+}
+
+/* ── Editorial hero ────────────────────────────────────────────────────── */
+.editorial-hero {
+    position: relative;
+    min-height: 100vh;
+    background: linear-gradient(180deg, var(--ivory) 0%, var(--cream) 100%);
+    overflow: hidden;
+    color: var(--espresso);
+}
+.editorial-hero::before {
+    /* big faint serif watermark on the right */
+    content: 'IBE';
+    position: absolute;
+    right: -4vw;
+    top: 8%;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(220px, 35vw, 520px);
+    font-weight: 300;
+    color: rgba(139, 105, 20, 0.06);
+    line-height: 0.85;
+    pointer-events: none;
+    user-select: none;
+}
+
+.editorial-eyebrow {
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.32em;
+    font-weight: 500;
+    color: var(--gold-700);
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+}
+.editorial-eyebrow::before,
+.editorial-eyebrow::after {
+    content: '';
+    width: 24px;
+    height: 1px;
+    background: var(--gold-500);
+}
+.editorial-eyebrow.no-rules::before,
+.editorial-eyebrow.no-rules::after { display: none; }
+
+.editorial-h1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 300;
+    font-size: clamp(56px, 9vw, 132px);
+    line-height: 0.94;
+    letter-spacing: -0.03em;
+    color: var(--ink);
+}
+.editorial-h1 em {
+    font-style: italic;
+    font-weight: 300;
+    color: var(--gold-700);
+}
+
+.editorial-lede {
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    line-height: 1.7;
+    color: rgba(26, 20, 16, 0.66);
+    max-width: 420px;
+    font-weight: 400;
+}
+
+.editorial-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 30px;
+    background: var(--ink);
+    color: var(--ivory);
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    font-weight: 500;
+    border-radius: 999px;
+    transition: background 280ms ease, transform 280ms ease, box-shadow 280ms ease;
+    border: 1px solid var(--ink);
+}
+.editorial-btn:hover {
+    background: var(--gold-700);
+    border-color: var(--gold-700);
+    transform: translateY(-2px);
+    box-shadow: 0 12px 30px -10px rgba(139, 105, 20, 0.5);
+}
+.editorial-btn--ghost {
+    background: transparent;
+    color: var(--ink);
+}
+.editorial-btn--ghost:hover {
+    background: var(--ink);
+    color: var(--ivory);
+}
+
+/* ── Floating annotation callouts (Eluxee "Detail Parts" treatment) ──── */
+.annotation {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--ink);
+    pointer-events: none;
+}
+.annotation__dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--gold-500);
+    box-shadow: 0 0 0 4px rgba(232, 201, 106, 0.18), 0 0 0 8px rgba(232, 201, 106, 0.08);
+    flex-shrink: 0;
+    animation: annotation-pulse 2.4s ease-in-out infinite;
+}
+@keyframes annotation-pulse {
+    0%, 100% { box-shadow: 0 0 0 4px rgba(232, 201, 106, 0.18), 0 0 0 8px rgba(232, 201, 106, 0.08); }
+    50%      { box-shadow: 0 0 0 6px rgba(232, 201, 106, 0.25), 0 0 0 14px rgba(232, 201, 106, 0.05); }
+}
+.annotation__line {
+    width: 40px;
+    height: 1px;
+    background: linear-gradient(90deg, var(--gold-500), transparent);
+}
+.annotation--right { flex-direction: row-reverse; }
+.annotation--right .annotation__line {
+    background: linear-gradient(-90deg, var(--gold-500), transparent);
+}
+.annotation__label {
+    background: rgba(255, 252, 245, 0.85);
+    backdrop-filter: blur(8px);
+    padding: 8px 14px;
+    border-radius: 999px;
+    border: 1px solid rgba(139, 105, 20, 0.18);
+    white-space: nowrap;
+    font-weight: 500;
+}
+.annotation__label strong {
+    color: var(--gold-700);
+    font-weight: 600;
+    letter-spacing: 0.18em;
+}
+
+/* Floating gold-price ticker pill in the hero */
+.spot-pill {
+    background: rgba(26, 20, 16, 0.92);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(232, 201, 106, 0.18);
+    border-radius: 18px;
+    padding: 18px 22px;
+    color: var(--ivory);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    box-shadow: 0 28px 60px -20px rgba(0, 0, 0, 0.4);
+}
+.spot-pill__row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    padding: 6px 0;
+}
+.spot-pill__row + .spot-pill__row { border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 12px; }
+.spot-pill__metal {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 22px;
+    line-height: 1;
+}
+.spot-pill__metal small {
+    display: block;
+    font-family: 'Inter', sans-serif;
+    font-size: 9px;
+    letter-spacing: 0.3em;
+    color: rgba(232, 201, 106, 0.6);
+    margin-top: 3px;
+}
+.spot-pill__price {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 22px;
+    color: var(--gold-300);
+    letter-spacing: -0.01em;
+}
+
+/* Subtle vertical line decorations (Eluxee uses lots of these) */
+.editorial-rule {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold-500), transparent);
+    width: 100%;
+    margin: 0;
+    border: 0;
+}
+
+
+
+/* Word-by-word text reveal — additive. Words are visible by default; the
+   .in class plays a one-shot entrance animation. */
+[data-text-reveal] { perspective: 800px; }
+[data-text-reveal] .word { display: inline-block; transform-origin: 50% 100%; }
+@keyframes word-in {
+    from { opacity: 0; transform: translateY(28px) rotateX(-50deg); filter: blur(8px); }
+    to   { opacity: 1; transform: translateY(0)    rotateX(0);     filter: blur(0); }
+}
+[data-text-reveal] .word.in {
+    animation: word-in 900ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Digit roller (odometer-style) */
+.roller-digit {
+    display: inline-block;
+    height: 1em;
+    overflow: hidden;
+    position: relative;
+    vertical-align: top;
+    line-height: 1;
+}
+.roller-old,
+.roller-new {
+    display: block;
+    line-height: 1;
+}
+.roller-old {
+    transform: translateY(0);
+    transition: transform 450ms cubic-bezier(0.45, 0, 0.15, 1);
+}
+.roller-new {
+    transform: translateY(0);
+    transition: transform 450ms cubic-bezier(0.45, 0, 0.15, 1);
+}
+.roller-digit.rolling .roller-old { transform: translateY(-100%); }
+.roller-digit.rolling .roller-new { transform: translateY(-100%); }
+.roller-flash {
+    animation: roller-flash 700ms ease-out;
+}
+@keyframes roller-flash {
+    0%   { background-color: rgba(232, 201, 106, 0.4); }
+    100% { background-color: transparent; }
+}
+
+/* Custom cursor */
+.cursor-dot,
+.cursor-ring {
+    position: fixed;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    z-index: 9999;
+    transition: opacity 200ms;
+    will-change: transform;
+    mix-blend-mode: difference;
+}
+.cursor-dot {
+    width: 6px;
+    height: 6px;
+    margin: -3px 0 0 -3px;
+    background: #E8C96A;
+    border-radius: 50%;
+}
+.cursor-ring {
+    width: 32px;
+    height: 32px;
+    margin: -16px 0 0 -16px;
+    border: 1.5px solid #E8C96A;
+    border-radius: 50%;
+    transition: width 250ms cubic-bezier(0.22, 1, 0.36, 1),
+                height 250ms cubic-bezier(0.22, 1, 0.36, 1),
+                margin 250ms cubic-bezier(0.22, 1, 0.36, 1),
+                background 250ms,
+                opacity 200ms;
+}
+.cursor-ring--hover {
+    width: 48px;
+    height: 48px;
+    margin: -24px 0 0 -24px;
+    background: rgba(232, 201, 106, 0.12);
+}
+@media (pointer: coarse) {
+    .cursor-dot, .cursor-ring { display: none; }
+}
+
+/* Page transitions */
+.page-leaving main {
+    animation: page-leave 400ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+.page-entering main {
+    animation: page-enter 600ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+@keyframes page-leave {
+    to { opacity: 0; transform: translateY(-12px); filter: blur(4px); }
+}
+@keyframes page-enter {
+    from { opacity: 0; transform: translateY(16px); filter: blur(4px); }
+    to   { opacity: 1; transform: translateY(0);    filter: blur(0); }
+}
+
+/* Three.js bar host: positioned over the CSS fallback so it can replace it
+   in-place when WebGL boots. The fallback (.gold-bar-stage) is hidden by
+   the JS once the canvas mounts. */
+[data-three-bar] {
+    width: 100%;
+    max-width: 360px;
+    height: 220px;
+    margin: 0 auto;
+    cursor: grab;
+}
+[data-three-bar] canvas {
+    width: 100% !important;
+    height: 100% !important;
+    display: block;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    [data-text-reveal] .word { opacity: 1; transform: none; filter: none; transition: none; }
+    .cursor-dot, .cursor-ring { display: none; }
+    .page-leaving main, .page-entering main { animation: none; }
 }
 
 /* ── Reviews marquee (vertical, two columns scrolling in opposite directions) ── */
