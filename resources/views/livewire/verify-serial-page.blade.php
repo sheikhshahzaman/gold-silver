@@ -62,19 +62,31 @@
                                         onfocus="this.style.borderColor='#E8C96A'; this.style.boxShadow='0 0 0 4px rgba(232,201,106,0.1)'"
                                         onblur="this.style.borderColor='rgba(201,168,76,0.25)'; this.style.boxShadow='none'"
                                         oninput="
-                                            // Auto-insert hyphens. The serial has 3 segments:
+                                            // Auto-insert hyphens. Serial format is:
                                             //   IBE - <metal-code> - <6-digit-serial>
-                                            // Metal code is variable length (e.g. SLV, G24K), so we
-                                            // place the second hyphen 6 chars from the end (the digits)
-                                            // once the user has typed enough characters.
+                                            // Metal codes IBE actually issues (see InventoryItem::buildSerialNumber):
+                                            //   SLV (silver),  G24K  G22K  G21K  G18K (gold karats)
+                                            // We match against this list (longest first) so the second
+                                            // hyphen drops in the instant the code is fully typed --
+                                            // i.e. 'IBESLV0' becomes 'IBE-SLV-0' immediately, and
+                                            // 'IBEG24K0' becomes 'IBE-G24K-0'.
+                                            const CODES = ['G24K','G22K','G21K','G18K','SLV'];
                                             const raw = this.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
                                             let f;
                                             if (raw.length <= 3) {
                                                 f = raw;
-                                            } else if (raw.length <= 9) {
-                                                f = raw.slice(0, 3) + '-' + raw.slice(3);
                                             } else {
-                                                f = raw.slice(0, 3) + '-' + raw.slice(3, -6) + '-' + raw.slice(-6);
+                                                const rest = raw.slice(3);
+                                                let matched = null;
+                                                for (const code of CODES) {
+                                                    if (rest.startsWith(code)) { matched = code; break; }
+                                                }
+                                                if (matched) {
+                                                    const tail = rest.slice(matched.length);
+                                                    f = 'IBE-' + matched + (tail ? '-' + tail : '');
+                                                } else {
+                                                    f = 'IBE-' + rest;
+                                                }
                                             }
                                             if (this.value !== f) {
                                                 const wasAtEnd = this.selectionStart === this.value.length;
