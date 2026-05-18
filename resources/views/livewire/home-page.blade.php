@@ -1,164 +1,107 @@
 <div>
 
     {{-- ================================================================ --}}
-    {{-- HERO SECTION — animated 3D gold bar, particles, scroll-driven      --}}
+    {{-- HERO SECTION with Image Slider                                    --}}
     {{-- ================================================================ --}}
-    <section class="relative overflow-hidden min-h-[640px] sm:min-h-[720px]">
+    <section class="relative overflow-hidden min-h-[480px] sm:min-h-[520px]"
+        x-data="{
+            current: 0,
+            total: {{ $heroSlides->count() ?: 0 }},
+            init() {
+                if (this.total > 1) {
+                    setInterval(() => { this.current = (this.current + 1) % this.total; }, 5000);
+                }
+            }
+        }">
 
-        {{-- Background layer (slides if any, else animated gradient) --}}
+        {{-- Background: slides or fallback gradient --}}
         @if($heroSlides->count())
-            <div class="absolute inset-0" style="z-index: 0;"
-                 x-data="{ current: 0, total: {{ $heroSlides->count() }},
-                     init(){ if(this.total>1){ setInterval(()=>{this.current=(this.current+1)%this.total;},6000); } } }">
-                @foreach($heroSlides as $i => $slide)
-                    <div class="absolute inset-0 transition-opacity duration-[1400ms] ease-in-out"
-                         :class="current === {{ $i }} ? 'opacity-100' : 'opacity-0'">
-                        <img src="{{ Storage::disk('public')->url($slide->image) }}" alt="{{ $slide->title ?? 'Hero' }}"
-                             class="w-full h-full object-cover scale-110"
-                             data-parallax="0.15">
-                    </div>
-                @endforeach
-            </div>
+            @foreach($heroSlides as $i => $slide)
+                <div class="absolute inset-0 transition-opacity duration-1000"
+                     :class="current === {{ $i }} ? 'opacity-100' : 'opacity-0'"
+                     style="z-index: 0;">
+                    <img src="{{ Storage::disk('public')->url($slide->image) }}" alt="{{ $slide->title ?? 'Hero' }}" class="w-full h-full object-cover">
+                    <div class="absolute inset-0" style="background: linear-gradient(135deg, rgba(10,31,16,0.85) 0%, rgba(13,61,31,0.7) 50%, rgba(26,26,10,0.8) 100%);"></div>
+                </div>
+            @endforeach
+        @else
+            <div class="absolute inset-0" style="background: linear-gradient(135deg, #0A1F10 0%, #0D3D1F 50%, #1A1A0A 100%); z-index: 0;"></div>
         @endif
 
-        {{-- Gradient veil over the background --}}
-        <div class="absolute inset-0" style="z-index: 1;
-             background: linear-gradient(135deg, rgba(8,28,16,0.95) 0%, rgba(10,46,35,0.82) 45%, rgba(20,16,8,0.92) 100%);"></div>
+        {{-- Radial glow --}}
+        <div class="absolute -top-1/2 -right-[10%] w-[500px] h-[500px] pointer-events-none" style="background: radial-gradient(circle, rgba(201,168,76,0.08) 0%, transparent 70%); z-index: 1;"></div>
 
-        {{-- Animated radial glows that drift with the mouse --}}
-        <div class="absolute -top-32 -right-32 w-[600px] h-[600px] pointer-events-none blur-2xl opacity-50" style="z-index: 1; background: radial-gradient(circle, rgba(201,168,76,0.45) 0%, transparent 70%);"></div>
-        <div class="absolute -bottom-40 -left-20 w-[520px] h-[520px] pointer-events-none blur-2xl opacity-40" style="z-index: 1; background: radial-gradient(circle, rgba(232,201,106,0.35) 0%, transparent 70%);"></div>
-
-        {{-- Gold particle canvas --}}
-        <canvas data-particles class="hero-particles"></canvas>
-
-        {{-- Content grid --}}
-        <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center" style="z-index: 2;">
-
-            {{-- Left: Text + CTAs --}}
-            <div class="lg:col-span-7" data-reveal-stagger="120">
-                <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[11px] tracking-[0.2em] uppercase"
-                     style="background: rgba(201,168,76,0.10); border: 1px solid rgba(201,168,76,0.35); color: #E8C96A;">
-                    <span class="live-dot" style="width: 8px; height: 8px;"></span>
+        {{-- Content --}}
+        <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20 flex flex-col lg:flex-row items-center justify-between gap-10" style="z-index: 2;">
+            {{-- Left: Text --}}
+            <div class="max-w-xl">
+                <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs tracking-widest mb-5" style="background: rgba(201,168,76,0.15); border: 1px solid rgba(201,168,76,0.4); color: #E8C96A;">
+                    <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>
                     Islamabad's Most Trusted Since 2015
                 </div>
-
-                <h1 class="text-5xl sm:text-6xl lg:text-7xl mt-6 leading-[1.05] text-white" style="font-weight: 300; letter-spacing: -0.02em;">
-                    <span class="block">Pakistan's</span>
-                    <span class="block shimmer-text font-medium">Premier Gold</span>
-                    <span class="block">&amp; Silver Exchange</span>
+                <h1 class="text-4xl sm:text-5xl text-white leading-tight mb-4" style="font-weight: 400;">
+                    Pakistan's Premier<br>
+                    <span style="color: #E8C96A;">Gold &amp; Silver</span><br>
+                    Exchange
                 </h1>
-
-                <p class="text-white/65 text-base sm:text-lg mt-6 leading-relaxed max-w-xl">
-                    Buy and sell certified bullion at live market rates. Transparent pricing, hallmarked products, expert guidance — all in one place.
+                <p class="text-white/65 text-base leading-relaxed mb-7 max-w-md">
+                    Buy and sell certified gold and silver at live market rates. Transparent pricing, authentic hallmarked products, and expert guidance — all in one place.
                 </p>
-
-                <div class="flex flex-wrap gap-3 mt-8">
-                    <a href="/buy" data-magnetic="0.18"
-                       class="group inline-flex items-center gap-2 px-7 py-3.5 rounded-full text-sm font-semibold shadow-lg shadow-gold/30 transition-shadow"
-                       style="background: linear-gradient(135deg, #E8C96A 0%, #C9A84C 50%, #B8862A 100%); color: #0A2E23;">
-                        Buy Gold Now
-                        <svg class="w-4 h-4 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/></svg>
-                    </a>
-                    <a href="/live" data-magnetic="0.18"
-                       class="inline-flex items-center gap-2 px-7 py-3.5 rounded-full text-sm font-medium border transition-colors hover:bg-white/5"
-                       style="color: #E8C96A; border-color: rgba(201,168,76,0.4);">
-                        <span class="live-dot" style="width: 7px; height: 7px;"></span>
-                        Check Live Rates
-                    </a>
+                <div class="flex flex-wrap gap-3">
+                    <a href="/buy" class="px-6 py-3 rounded text-sm font-medium transition-transform hover:scale-105" style="background: #C9A84C; color: #0A2E23;">Buy Gold Now</a>
+                    <a href="/live" class="px-6 py-3 rounded text-sm border transition-colors hover:bg-white/10" style="color: #E8C96A; border-color: rgba(201,168,76,0.5);">Check Live Rates</a>
                 </div>
 
-                {{-- Trust metrics inline --}}
-                <div class="grid grid-cols-3 gap-6 mt-12 max-w-md" data-reveal>
-                    <div>
-                        <div class="text-3xl text-gold" style="font-weight: 300;"
-                             data-counter="10" data-counter-suffix="+">10+</div>
-                        <div class="text-[11px] uppercase tracking-widest text-white/50 mt-1">Years</div>
+                {{-- Slide dots --}}
+                @if($heroSlides->count() > 1)
+                    <div class="flex gap-2 mt-8">
+                        @foreach($heroSlides as $i => $slide)
+                            <button @click="current = {{ $i }}" class="w-2.5 h-2.5 rounded-full transition-all duration-300" :class="current === {{ $i }} ? 'w-8' : ''" :style="current === {{ $i }} ? 'background: #C9A84C;' : 'background: rgba(255,255,255,0.3);'"></button>
+                        @endforeach
                     </div>
-                    <div>
-                        <div class="text-3xl text-gold" style="font-weight: 300;"
-                             data-counter="50000" data-counter-format="compact">50K+</div>
-                        <div class="text-[11px] uppercase tracking-widest text-white/50 mt-1">Customers</div>
-                    </div>
-                    <div>
-                        <div class="text-3xl text-gold" style="font-weight: 300;">
-                            <span data-counter="100" data-counter-suffix="%">100%</span>
+                @endif
+            </div>
+
+            {{-- Right: Live Ticker Card --}}
+            <div class="w-full sm:w-auto sm:min-w-[300px] rounded-xl p-5 backdrop-blur-sm" style="background: rgba(0,0,0,0.5); border: 1px solid rgba(201,168,76,0.3);">
+                <div class="text-xs tracking-widest mb-4" style="color: #E8C96A;">LIVE SPOT PRICES (PER OZ)</div>
+
+                {{-- Gold row --}}
+                <div class="flex items-center justify-between py-3 border-b border-white/10">
+                    <div class="flex items-center gap-2">
+                        <span class="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold" style="background: #C9A84C; color: #0A2E23;">Au</span>
+                        <div>
+                            <div class="text-white text-sm">Gold</div>
+                            <div class="text-white/40 text-[10px]">XAU/USD</div>
                         </div>
-                        <div class="text-[11px] uppercase tracking-widest text-white/50 mt-1">Authentic</div>
+                    </div>
+                    <div class="text-right">
+                        @if(!empty($internationalRates['xau_usd']))
+                            <div class="text-base font-medium" style="color: #E8C96A;" data-price="{{ $internationalRates['xau_usd'] }}" data-pkey="intl-xau-bid">${{ number_format($internationalRates['xau_usd'], 2) }}</div>
+                        @else
+                            <div class="text-base" style="color: #E8C96A;">&mdash;</div>
+                        @endif
+                    </div>
+                </div>
+
+                {{-- Silver row --}}
+                <div class="flex items-center justify-between py-3">
+                    <div class="flex items-center gap-2">
+                        <span class="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold" style="background: #9E9E9E; color: #fff;">Ag</span>
+                        <div>
+                            <div class="text-white text-sm">Silver</div>
+                            <div class="text-white/40 text-[10px]">XAG/USD</div>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        @if(!empty($internationalRates['xag_usd']))
+                            <div class="text-base font-medium text-gray-300" data-price="{{ $internationalRates['xag_usd'] }}" data-pkey="intl-xag-bid">${{ number_format($internationalRates['xag_usd'], 2) }}</div>
+                        @else
+                            <div class="text-base text-gray-300">&mdash;</div>
+                        @endif
                     </div>
                 </div>
             </div>
-
-            {{-- Right: 3D Gold Bar + Live Spot Card stacked --}}
-            <div class="lg:col-span-5 flex flex-col items-center gap-8" data-reveal="scale">
-
-                {{-- 3D animated gold bar --}}
-                <div class="gold-bar-stage">
-                    <div class="gold-bar" data-hero-bar>
-                        <div class="gold-bar__face">
-                            <div class="gold-bar__brand">
-                                <strong>IBE</strong>
-                                <span>24K · 999.9</span>
-                            </div>
-                        </div>
-                        <div class="gold-bar__face gold-bar__face--back"></div>
-                        <div class="gold-bar__face gold-bar__face--right"></div>
-                        <div class="gold-bar__face gold-bar__face--left"></div>
-                        <div class="gold-bar__face gold-bar__face--top"></div>
-                        <div class="gold-bar__face gold-bar__face--bot"></div>
-                    </div>
-                </div>
-
-                {{-- Live spot prices card --}}
-                <div class="w-full max-w-sm rounded-2xl p-5 backdrop-blur-xl shadow-2xl"
-                     style="background: rgba(8, 28, 16, 0.65); border: 1px solid rgba(201,168,76,0.25);">
-                    <div class="flex items-center justify-between mb-4">
-                        <div class="text-[11px] tracking-[0.2em] uppercase" style="color: #E8C96A;">Live Spot Prices · Per Oz</div>
-                        <span class="live-dot" style="width: 8px; height: 8px;"></span>
-                    </div>
-
-                    <div class="flex items-center justify-between py-3 border-b border-white/[0.08]">
-                        <div class="flex items-center gap-2.5">
-                            <span class="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold" style="background: linear-gradient(135deg, #C9A84C, #A67922); color: #0A2E23;">Au</span>
-                            <div>
-                                <div class="text-white text-sm font-medium">Gold</div>
-                                <div class="text-white/40 text-[10px] tracking-wider">XAU/USD</div>
-                            </div>
-                        </div>
-                        <div class="text-right">
-                            @if(!empty($internationalRates['xau_usd']))
-                                <div class="text-lg font-semibold" style="color: #E8C96A;" data-price="{{ $internationalRates['xau_usd'] }}" data-pkey="intl-xau-bid">${{ number_format($internationalRates['xau_usd'], 2) }}</div>
-                            @else
-                                <div class="text-lg" style="color: #E8C96A;">&mdash;</div>
-                            @endif
-                        </div>
-                    </div>
-
-                    <div class="flex items-center justify-between py-3">
-                        <div class="flex items-center gap-2.5">
-                            <span class="w-8 h-8 rounded-full bg-gray-400/30 flex items-center justify-center text-[11px] font-bold text-gray-200">Ag</span>
-                            <div>
-                                <div class="text-white text-sm font-medium">Silver</div>
-                                <div class="text-white/40 text-[10px] tracking-wider">XAG/USD</div>
-                            </div>
-                        </div>
-                        <div class="text-right">
-                            @if(!empty($internationalRates['xag_usd']))
-                                <div class="text-lg font-semibold text-gray-200" data-price="{{ $internationalRates['xag_usd'] }}" data-pkey="intl-xag-bid">${{ number_format($internationalRates['xag_usd'], 2) }}</div>
-                            @else
-                                <div class="text-lg text-gray-200">&mdash;</div>
-                            @endif
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-        </div>
-
-        {{-- Scroll cue --}}
-        <div class="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2 opacity-70">
-            <span class="text-[10px] tracking-[0.25em] uppercase" style="color: #E8C96A;">Scroll</span>
-            <div class="scroll-cue"></div>
         </div>
     </section>
 
@@ -200,7 +143,7 @@
     {{-- ================================================================ --}}
     {{-- ABOUT SECTION                                                     --}}
     {{-- ================================================================ --}}
-    <section class="bg-white py-16 px-4 sm:px-6 lg:px-8" data-reveal>
+    <section class="bg-white py-16 px-4 sm:px-6 lg:px-8">
         <div class="max-w-6xl mx-auto flex flex-col lg:flex-row gap-10 items-center">
             {{-- Left: Stats Box --}}
             <div class="w-full lg:w-[340px] shrink-0">
@@ -260,13 +203,13 @@
     {{-- ================================================================ --}}
     <section class="py-14 px-4 sm:px-6 lg:px-8" style="background: #0A2E23;">
         <div class="max-w-6xl mx-auto">
-            <div class="text-center mb-10" data-reveal>
+            <div class="text-center mb-10">
                 <div class="text-xs tracking-widest uppercase mb-2" style="color: #E8C96A;">Updated in Real-Time</div>
                 <h2 class="text-2xl sm:text-3xl text-white mb-2" style="font-weight: 400;">Today's Gold &amp; Silver Rates</h2>
                 <p class="text-sm text-white/50">All prices in Pakistani Rupees (PKR). International rates from XAU/XAG spot market.</p>
             </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4" data-reveal-stagger="140">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {{-- Gold Card --}}
                 <div class="rounded-xl p-4 sm:p-5" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(201,168,76,0.2);">
                     <div class="flex items-center justify-between mb-4">
@@ -352,7 +295,7 @@
     {{-- ================================================================ --}}
     {{-- SHOP / PRODUCTS SECTION                                           --}}
     {{-- ================================================================ --}}
-    <section class="py-14 px-4 sm:px-6 lg:px-8" style="background: #FAF6EE;" data-reveal>
+    <section class="py-14 px-4 sm:px-6 lg:px-8" style="background: #FAF6EE;">
         <div class="max-w-6xl mx-auto">
             <div class="flex items-center justify-between mb-8">
                 <div>
@@ -367,7 +310,7 @@
                     <a href="/products?category={{ $cat->slug }}" class="px-4 py-1.5 rounded-full text-xs cursor-pointer text-gray-500 bg-white border border-gray-200 transition-colors hover:border-gold hover:text-gold-dark">{{ $cat->name }}</a>
                 @endforeach
             </div>
-            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4" data-reveal-stagger="120">
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 @foreach($products as $prod)
                     @php
                         $prodIcon = match($prod->category) {
@@ -398,7 +341,7 @@
                             $isEnquiry = false;
                         }
                     @endphp
-                    <div class="rounded-lg overflow-hidden bg-white transition-shadow duration-300 hover:shadow-2xl" data-tilt="6" style="border: 1px solid #E8E0CC;">
+                    <div class="rounded-lg overflow-hidden bg-white" style="border: 1px solid #E8E0CC;">
                         <div class="relative">
                             @if(!$isEnquiry && $prod->discount_label)
                                 <span class="absolute top-2 left-2 z-10 px-2 py-0.5 rounded text-[10px] font-bold text-white" style="background: #E53935;">{{ $prod->discount_label }}</span>
@@ -451,13 +394,13 @@
     {{-- ================================================================ --}}
     {{-- SERVICES SECTION                                                  --}}
     {{-- ================================================================ --}}
-    <section class="py-14 px-4 sm:px-6 lg:px-8 bg-white" data-reveal>
+    <section class="py-14 px-4 sm:px-6 lg:px-8 bg-white">
         <div class="max-w-6xl mx-auto">
             <div class="mb-10">
                 <div class="text-xs tracking-widest uppercase mb-1" style="color: #8B6914;">What We Offer</div>
                 <h2 class="text-2xl" style="font-weight: 400; color: #1A1A1A;">Complete Bullion &amp; Jewelry Services</h2>
             </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5" data-reveal-stagger="120">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                 @foreach($services as $svc)
                     <div class="rounded-xl p-6 transition-colors" style="border: 1px solid #E5DCC8;">
                         <div class="w-12 h-12 rounded-lg flex items-center justify-center text-xl mb-4" style="background: #F2EBD9;">{{ $svc->icon }}</div>
@@ -508,11 +451,11 @@
     {{-- ================================================================ --}}
     {{-- STATS / WHY US SECTION                                            --}}
     {{-- ================================================================ --}}
-    <section class="py-14 px-4 sm:px-6 lg:px-8" style="background: #1A1A1A;" data-reveal>
+    <section class="py-14 px-4 sm:px-6 lg:px-8" style="background: #1A1A1A;">
         <div class="max-w-6xl mx-auto text-center">
             <div class="text-xs tracking-widest uppercase mb-2" style="color: #E8C96A;">Our Track Record</div>
             <h2 class="text-2xl text-white mb-10" style="font-weight: 400;">Trusted by Thousands Across Pakistan</h2>
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4" data-reveal-stagger="140">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                 @foreach([
                     ['num' => $trackRecord['years'], 'label' => 'YEARS IN BUSINESS'],
                     ['num' => $trackRecord['customers'], 'label' => 'HAPPY CUSTOMERS'],
@@ -533,7 +476,7 @@
     {{-- ================================================================ --}}
     {{-- CONTACT SECTION                                                   --}}
     {{-- ================================================================ --}}
-    <section class="py-14 px-4 sm:px-6 lg:px-8" style="background: #FAF6EE;" data-reveal>
+    <section class="py-14 px-4 sm:px-6 lg:px-8" style="background: #FAF6EE;">
         <div class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-10 items-start">
             {{-- Left: Info --}}
             <div>
