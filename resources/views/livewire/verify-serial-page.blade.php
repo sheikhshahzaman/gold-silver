@@ -55,10 +55,33 @@
                                         placeholder="IBE-G24K-000001"
                                         autocomplete="off"
                                         autocapitalize="characters"
+                                        inputmode="text"
+                                        maxlength="16"
                                         class="w-full pl-12 pr-4 py-4 md:py-5 rounded-2xl text-lg md:text-xl font-mono tracking-wider text-white placeholder:text-white/30 border-2 transition-all focus:outline-none"
                                         style="background: rgba(0,0,0,0.3); border-color: rgba(201,168,76,0.25); letter-spacing: 0.1em;"
                                         onfocus="this.style.borderColor='#E8C96A'; this.style.boxShadow='0 0 0 4px rgba(232,201,106,0.1)'"
                                         onblur="this.style.borderColor='rgba(201,168,76,0.25)'; this.style.boxShadow='none'"
+                                        oninput="
+                                            // Auto-insert hyphens. The serial has 3 segments:
+                                            //   IBE - <metal-code> - <6-digit-serial>
+                                            // Metal code is variable length (e.g. SLV, G24K), so we
+                                            // place the second hyphen 6 chars from the end (the digits)
+                                            // once the user has typed enough characters.
+                                            const raw = this.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+                                            let f;
+                                            if (raw.length <= 3) {
+                                                f = raw;
+                                            } else if (raw.length <= 9) {
+                                                f = raw.slice(0, 3) + '-' + raw.slice(3);
+                                            } else {
+                                                f = raw.slice(0, 3) + '-' + raw.slice(3, -6) + '-' + raw.slice(-6);
+                                            }
+                                            if (this.value !== f) {
+                                                const wasAtEnd = this.selectionStart === this.value.length;
+                                                this.value = f;
+                                                if (wasAtEnd) this.setSelectionRange(f.length, f.length);
+                                            }
+                                        "
                                         required
                                     >
                                 </div>
