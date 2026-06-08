@@ -8,6 +8,7 @@ use App\Models\ProductCategory;
 use App\Models\Service;
 use App\Models\Setting;
 use App\Models\Testimonial;
+use App\Services\Cart;
 use App\Services\PriceEngine\PriceCacheManager;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -21,6 +22,18 @@ class HomePage extends Component
     public array $silverPrices = [];
     public array $internationalRates = [];
     public array $currencyRates = [];
+
+    /** Flash flag per product after Add to Cart. */
+    public array $justAdded = [];
+
+    public function addToCart(int $productId): void
+    {
+        $product = Product::find($productId);
+        if (!$product) return;
+        app(Cart::class)->add($product, 1);
+        $this->justAdded[$productId] = true;
+        $this->dispatch('cart-updated');
+    }
 
     public function mount(): void
     {

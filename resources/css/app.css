@@ -164,6 +164,22 @@
     vertical-align: 0.12em;
 }
 
+/* ── Pointer cursor on interactive elements ──
+   Tailwind v4's preflight sets `cursor: default` on <button> elements. We
+   restore the expected pointer cursor here so every button, anchor and
+   wire:click-bound element feels clickable. */
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]),
+a[href],
+[wire\:click],
+[wire\:submit] {
+    cursor: pointer;
+}
+button:disabled,
+[aria-disabled="true"] {
+    cursor: not-allowed;
+}
+
 /* ── News ticker ── */
 .ticker-wrapper { @apply overflow-hidden whitespace-nowrap; }
 .ticker-content {

@@ -7,20 +7,46 @@
 
     {{-- Order Summary --}}
     <div class="glass-card p-4 mb-6">
-        <div class="flex items-center justify-between">
-            <div>
-                <span class="text-sm font-medium" style="color: #888;">{{ ucfirst($order->type) }}ing</span>
-                <p class="font-semibold" style="color: #0A2E23;">
-                    {{ $order->quantity }} x
-                    @if($order->metal === 'gold') Gold {{ strtoupper($order->karat) }} @else Silver @endif
-                    ({{ str_replace('_', ' ', ucfirst($order->unit)) }})
-                </p>
+        @php $orderItems = $order->items; @endphp
+
+        @if($orderItems->isNotEmpty())
+            {{-- Cart-based order: list each line item --}}
+            <div class="text-sm font-medium mb-3" style="color: #888;">{{ ucfirst($order->type) }}ing &middot; {{ $orderItems->count() }} {{ Str::plural('item', $orderItems->count()) }}</div>
+            <div class="space-y-2">
+                @foreach($orderItems as $line)
+                    <div class="flex items-baseline justify-between gap-3 text-sm">
+                        <div class="min-w-0">
+                            <p class="font-medium truncate" style="color: #0A2E23;">{{ $line->product_name }}</p>
+                            <p class="text-[11px]" style="color: #888;">
+                                {{ $line->quantity }} × Rs {{ number_format($line->unit_price) }}
+                                @if($line->product_weight) &middot; {{ $line->product_weight }} @endif
+                            </p>
+                        </div>
+                        <span class="font-semibold whitespace-nowrap" style="color: #0A2E23;">Rs {{ number_format($line->line_total) }}</span>
+                    </div>
+                @endforeach
             </div>
-            <div class="text-right">
+            <div class="flex items-center justify-between mt-4 pt-3" style="border-top: 1px solid #E8DFD0;">
                 <span class="text-sm" style="color: #888;">Total</span>
                 <p class="text-xl font-bold text-gold">Rs {{ number_format($order->total_amount, 0) }}</p>
             </div>
-        </div>
+        @else
+            {{-- Legacy single-product order (Buy/Sell wizard) --}}
+            <div class="flex items-center justify-between">
+                <div>
+                    <span class="text-sm font-medium" style="color: #888;">{{ ucfirst($order->type) }}ing</span>
+                    <p class="font-semibold" style="color: #0A2E23;">
+                        {{ $order->quantity }} x
+                        @if($order->metal === 'gold') Gold {{ strtoupper($order->karat) }} @else Silver @endif
+                        ({{ str_replace('_', ' ', ucfirst($order->unit)) }})
+                    </p>
+                </div>
+                <div class="text-right">
+                    <span class="text-sm" style="color: #888;">Total</span>
+                    <p class="text-xl font-bold text-gold">Rs {{ number_format($order->total_amount, 0) }}</p>
+                </div>
+            </div>
+        @endif
     </div>
 
     {{-- Step Wizard Indicator --}}

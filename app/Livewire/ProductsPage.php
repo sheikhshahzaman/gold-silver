@@ -4,6 +4,7 @@ namespace App\Livewire;
 
 use App\Models\Product;
 use App\Models\ProductCategory;
+use App\Services\Cart;
 use App\Services\PriceEngine\PriceCacheManager;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -16,6 +17,12 @@ class ProductsPage extends Component
     public string $categoryId = 'all';
     public array $goldPrices = [];
     public array $silverPrices = [];
+
+    /**
+     * Product ID -> "Added!" flash, cleared on the next render. Lets the
+     * Add-to-Cart button momentarily show feedback after a click.
+     */
+    public array $justAdded = [];
 
     public function mount(): void
     {
@@ -37,6 +44,16 @@ class ProductsPage extends Component
     public function setCategory(string $id): void
     {
         $this->categoryId = $id;
+    }
+
+    /** Add a product to the cart and flash a confirmation badge on its card. */
+    public function addToCart(int $productId): void
+    {
+        $product = Product::find($productId);
+        if (!$product) return;
+        app(Cart::class)->add($product, 1);
+        $this->justAdded[$productId] = true;
+        $this->dispatch('cart-updated');
     }
 
     public function render()

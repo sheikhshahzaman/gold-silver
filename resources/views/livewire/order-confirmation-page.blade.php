@@ -48,20 +48,39 @@
                 <span style="color: #888;">Type</span>
                 <span class="font-medium" style="color: #0A2E23;">{{ ucfirst($order->type) }}</span>
             </div>
-            <div class="flex justify-between">
-                <span style="color: #888;">Item</span>
-                <span class="font-medium" style="color: #0A2E23;">
-                    @if($order->metal === 'gold') Gold {{ strtoupper($order->karat) }} @else Silver @endif
-                </span>
-            </div>
-            <div class="flex justify-between">
-                <span style="color: #888;">Quantity</span>
-                <span class="font-medium" style="color: #0A2E23;">{{ $order->quantity }} {{ str_replace('_', ' ', ucfirst($order->unit)) }}</span>
-            </div>
-            <div class="flex justify-between">
-                <span style="color: #888;">Unit Price</span>
-                <span class="font-medium" style="color: #0A2E23;">Rs {{ number_format($order->locked_price, 0) }}</span>
-            </div>
+            @php $orderItems = $order->items; @endphp
+            @if($orderItems->isNotEmpty())
+                {{-- Cart-based order: list each line item --}}
+                <div class="flex flex-col gap-2 py-1">
+                    <span style="color: #888;">Items ({{ $orderItems->count() }})</span>
+                    @foreach($orderItems as $line)
+                        <div class="flex justify-between text-sm">
+                            <span style="color: #0A2E23;">
+                                {{ $line->quantity }} × {{ $line->product_name }}
+                                @if($line->product_weight)
+                                    <span style="color: #888;">({{ $line->product_weight }})</span>
+                                @endif
+                            </span>
+                            <span class="font-medium" style="color: #0A2E23;">Rs {{ number_format($line->line_total, 0) }}</span>
+                        </div>
+                    @endforeach
+                </div>
+            @else
+                <div class="flex justify-between">
+                    <span style="color: #888;">Item</span>
+                    <span class="font-medium" style="color: #0A2E23;">
+                        @if($order->metal === 'gold') Gold {{ strtoupper($order->karat) }} @else Silver @endif
+                    </span>
+                </div>
+                <div class="flex justify-between">
+                    <span style="color: #888;">Quantity</span>
+                    <span class="font-medium" style="color: #0A2E23;">{{ $order->quantity }} {{ str_replace('_', ' ', ucfirst($order->unit)) }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span style="color: #888;">Unit Price</span>
+                    <span class="font-medium" style="color: #0A2E23;">Rs {{ number_format($order->locked_price, 0) }}</span>
+                </div>
+            @endif
             <hr style="border-color: #E8DFD0;">
             <div class="flex justify-between">
                 <span class="font-semibold" style="color: #0A2E23;">Total Amount</span>

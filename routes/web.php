@@ -1,6 +1,7 @@
 <?php
 
 use App\Livewire\BuyPage;
+use App\Livewire\CartPage;
 use App\Livewire\CheckoutPage;
 use App\Livewire\ContactPage;
 use App\Livewire\HomePage;
@@ -28,6 +29,7 @@ Route::get('/buy', BuyPage::class)->name('buy');
 Route::get('/sell', SellPage::class)->name('sell');
 Route::get('/contact', ContactPage::class)->name('contact');
 Route::get('/zakat-calculator', ZakatCalculatorPage::class)->name('zakat');
+Route::get('/cart', CartPage::class)->name('cart');
 Route::get('/checkout/{orderNumber}', CheckoutPage::class)->name('checkout');
 Route::get('/order/{orderNumber}', OrderConfirmationPage::class)->name('order.show');
 Route::get('/scan', ScanQrPage::class)->name('scan');

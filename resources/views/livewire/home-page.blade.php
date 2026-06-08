@@ -380,7 +380,23 @@
                                         <div class="text-sm font-medium" style="color: #0D3D1F;">Contact for price</div>
                                     @endif
                                 </div>
-                                <a href="{{ $prodUrl }}" class="px-3 py-1.5 rounded text-[11px] text-white" style="background: #0D3D1F;">{{ $isEnquiry ? 'Enquire' : 'Buy' }}</a>
+                                @if($isEnquiry)
+                                    <a href="{{ $prodUrl }}" class="px-3 py-1.5 rounded text-[11px] text-white" style="background: #0D3D1F;">Enquire</a>
+                                @else
+                                    @php $added = !empty($justAdded[$prod->id]); @endphp
+                                    <button wire:click="addToCart({{ $prod->id }})"
+                                            wire:loading.attr="disabled"
+                                            wire:target="addToCart({{ $prod->id }})"
+                                            class="inline-flex items-center gap-1 px-3 py-1.5 rounded text-[11px] text-white transition-colors"
+                                            style="background: {{ $added ? '#1B5E20' : '#0D3D1F' }};">
+                                        @if($added)
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
+                                            Added
+                                        @else
+                                            Add to Cart
+                                        @endif
+                                    </button>
+                                @endif
                             </div>
                         </div>
                     </div>

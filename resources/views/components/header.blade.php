@@ -68,6 +68,7 @@
                     <span class="live-dot"></span>
                     Live Rates
                 </a>
+                <livewire:cart-icon-widget variant="dark" />
                 <a href="/buy" class="px-4 py-2 rounded text-xs font-medium" style="background: #C9A84C; color: #0F2419;">Get Quote</a>
             </div>
 

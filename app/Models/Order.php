@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Str;
 
@@ -72,5 +73,21 @@ class Order extends Model
     public function payment(): HasOne
     {
         return $this->hasOne(Payment::class);
+    }
+
+    /**
+     * Line items for cart-based orders. Single-product orders (Buy/Sell
+     * wizards) leave this empty and use the metal/karat/quantity columns
+     * on `orders` directly.
+     */
+    public function items(): HasMany
+    {
+        return $this->hasMany(OrderItem::class);
+    }
+
+    /** True when this order was built from a multi-item cart checkout. */
+    public function isCartOrder(): bool
+    {
+        return $this->items()->exists();
     }
 }

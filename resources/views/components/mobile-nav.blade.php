@@ -32,6 +32,9 @@
             <span class="text-[10px] font-medium {{ request()->is('live') ? 'text-gold' : 'text-white/60' }}">Spot</span>
         </a>
 
+        {{-- Cart (live count via tiny Livewire widget) --}}
+        <livewire:cart-icon-widget :mobile="true" />
+
         {{-- WhatsApp --}}
         <a href="{{ $waHref }}" @if($waNumber) target="_blank" rel="noopener" @endif class="flex flex-col items-center justify-center flex-1 py-1 text-white/60">
             <svg class="w-5 h-5 mb-0.5" viewBox="0 0 24 24" fill="currentColor" style="color: #25D366;">
