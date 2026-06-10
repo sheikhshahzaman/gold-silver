@@ -27,6 +27,10 @@ class PriceController extends Controller
             'silver' => $silverBid ? ['bid' => (float) $silverBid, 'ask' => round((float) $silverBid * (1 + $silverSpreadPct / 100), 2)] : null,
         ];
 
+        // Admin kill-switch: when off, the frontend freezes all live ticking.
+        $prices['live_rates_enabled'] = Cache::remember('setting.live_rates_enabled', 60,
+            fn () => Setting::get('live_rates_enabled', '1')) === '1';
+
         return response()->json($prices, 200, ['Cache-Control' => 'no-store']);
     }
 }

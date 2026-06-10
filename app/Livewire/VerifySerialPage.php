@@ -33,13 +33,19 @@ class VerifySerialPage extends Component
 
         $normalized = strtoupper(trim($this->serialNumber));
 
+        // Stored serials carry the IBE- prefix; accept entries without it too.
+        $candidates = array_unique([
+            $normalized,
+            str_starts_with($normalized, 'IBE-') ? $normalized : 'IBE-'.$normalized,
+        ]);
+
         $item = InventoryItem::with('product.productCategory')
-            ->where('serial_number', $normalized)
+            ->whereIn('serial_number', $candidates)
             ->first();
 
         $approvedSerial = null;
         if (!$item) {
-            $approvedSerial = VerifiedSerial::where('serial_number', $normalized)
+            $approvedSerial = VerifiedSerial::whereIn('serial_number', $candidates)
                 ->where('is_active', true)
                 ->first();
         }

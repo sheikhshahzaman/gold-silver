@@ -4,6 +4,7 @@ namespace App\Filament\Pages;
 
 use App\Models\Setting;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
@@ -39,6 +40,7 @@ class SiteSettings extends Page implements HasForms
     {
         $this->form->fill([
             'site_name' => Setting::get('site_name', 'Islamabad Bullion Exchange'),
+            'live_rates_enabled' => Setting::get('live_rates_enabled', '1') === '1',
             'international_spread_gold_pct' => (float) Setting::get('international_spread_gold_pct', 0.05),
             'international_spread_silver_pct' => (float) Setting::get('international_spread_silver_pct', 0.1),
         ]);
@@ -53,6 +55,15 @@ class SiteSettings extends Page implements HasForms
                         TextInput::make('site_name')
                             ->label('Site Name')
                             ->placeholder('Islamabad Bullion Exchange'),
+                    ]),
+                Section::make('Live Rates')
+                    ->description('Control the live-updating prices shown across the whole website.')
+                    ->schema([
+                        Toggle::make('live_rates_enabled')
+                            ->label('Live rate updates')
+                            ->helperText('ON: prices tick and refresh in real time on every page. OFF: prices freeze at their last values and all live indicators pause — visitors see static rates until you switch this back on.')
+                            ->onColor('success')
+                            ->offColor('danger'),
                     ]),
                 Section::make('International Spread')
                     ->description('Margin applied to international BID prices to compute the displayed ASK. Only affects the International Metal Rates table (USD/oz).')
@@ -127,6 +138,11 @@ class SiteSettings extends Page implements HasForms
 
         if (isset($data['site_name'])) {
             Setting::set('site_name', $data['site_name']);
+        }
+
+        if (array_key_exists('live_rates_enabled', $data)) {
+            Setting::set('live_rates_enabled', $data['live_rates_enabled'] ? '1' : '0');
+            Cache::forget('setting.live_rates_enabled');
         }
 
         if (array_key_exists('international_spread_gold_pct', $data)) {

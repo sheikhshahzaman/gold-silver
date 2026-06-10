@@ -20,6 +20,9 @@ class CartIconWidget extends Component
     /** Render the icon as the mobile bottom-nav tab (with label below) instead of the header pill. */
     public bool $mobile = false;
 
+    /** Render just the icon + badge for the floating draggable button. */
+    public bool $floating = false;
+
     #[On('cart-updated')]
     public function refresh(): void
     {

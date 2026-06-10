@@ -52,46 +52,43 @@
                                     <input
                                         type="text"
                                         wire:model="serialNumber"
-                                        placeholder="G24K-000001"
+                                        placeholder="IBE-G24K-000001"
                                         autocomplete="off"
                                         autocapitalize="characters"
                                         inputmode="text"
-                                        maxlength="16"
+                                        maxlength="20"
                                         class="w-full pl-12 pr-4 py-4 md:py-5 rounded-2xl text-lg md:text-xl font-mono tracking-wider text-white placeholder:text-white/30 border-2 transition-all focus:outline-none"
                                         style="background: rgba(0,0,0,0.3); border-color: rgba(201,168,76,0.25); letter-spacing: 0.1em;"
                                         onfocus="this.style.borderColor='#E8C96A'; this.style.boxShadow='0 0 0 4px rgba(232,201,106,0.1)'"
                                         onblur="this.style.borderColor='rgba(201,168,76,0.25)'; this.style.boxShadow='none'"
                                         oninput="
-                                            // IBE- is automatically prepended -- the customer only
-                                            // types the metal code + serial.
+                                            // The customer types the whole serial themselves (including
+                                            // IBE if present) -- we only insert the hyphens, always
+                                            // following the serial shape PRE-CODE-DIGITS:
+                                            //   3-char prefix (IBE), then the metal code, then digits.
                                             // Known metal codes (InventoryItem::buildSerialNumber):
-                                            //   SLV (3-char) and G24K/G22K/G21K/G18K (4-char).
-                                            // Rules:
-                                            //   1. Strip a leading 'IBE' if they happen to type it.
-                                            //   2. If the typed content matches a known code, drop
-                                            //      the second hyphen the instant it does.
-                                            //   3. Otherwise assume a 4-char metal code (majority
-                                            //      case) once they've typed at least 5 chars.
-                                            //   4. Empty content -> empty field, so they can clear.
+                                            //   SLV (3-char) and G24K/G22K/G21K/G18K (4-char);
+                                            //   unknown codes assume the 4-char majority case.
+                                            // Typing the metal code directly (no IBE) also works.
                                             const CODES = ['G24K','G22K','G21K','G18K','SLV'];
                                             const raw = this.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
-                                            // Treat a typed 'IBE' as part of the locked prefix, not content
-                                            const content = raw.startsWith('IBE') ? raw.slice(3) : raw;
-                                            let f;
-                                            if (content.length === 0) {
-                                                f = '';
-                                            } else {
-                                                let matched = null;
-                                                for (const code of CODES) {
-                                                    if (content.startsWith(code)) { matched = code; break; }
-                                                }
-                                                if (matched) {
-                                                    const tail = content.slice(matched.length);
-                                                    f = 'IBE-' + matched + (tail ? '-' + tail : '');
-                                                } else if (content.length > 4) {
-                                                    f = 'IBE-' + content.slice(0, 4) + '-' + content.slice(4);
+                                            let f = '';
+                                            if (raw.length) {
+                                                const codeAtStart = CODES.find(c => raw.startsWith(c));
+                                                if (codeAtStart) {
+                                                    // They skipped the IBE prefix and began with the code.
+                                                    const tail = raw.slice(codeAtStart.length);
+                                                    f = codeAtStart + (tail ? '-' + tail : '');
                                                 } else {
-                                                    f = 'IBE-' + content;
+                                                    const prefix = raw.slice(0, 3);
+                                                    const rest = raw.slice(3);
+                                                    f = prefix;
+                                                    if (rest.length) {
+                                                        const code = CODES.find(c => rest.startsWith(c));
+                                                        const codeLen = code ? code.length : 4;
+                                                        const tail = rest.slice(codeLen);
+                                                        f += '-' + rest.slice(0, codeLen) + (tail ? '-' + tail : '');
+                                                    }
                                                 }
                                             }
                                             if (this.value !== f) {
@@ -104,7 +101,7 @@
                                     >
                                 </div>
                                 @error('serialNumber') <p class="mt-2 text-xs text-red-400">{{ $message }}</p> @enderror
-                                <p class="mt-2 text-xs" style="color: rgba(255,255,255,0.4);">Format: <span class="font-mono" style="color: #E8C96A;">IBE-G24K-000001</span> — just type the code &amp; digits, <span style="color: #E8C96A;">IBE-</span> is added for you.</p>
+                                <p class="mt-2 text-xs" style="color: rgba(255,255,255,0.4);">Format: <span class="font-mono" style="color: #E8C96A;">IBE-G24K-000001</span> — hyphens are added for you as you type.</p>
                             </div>
 
                             {{-- Optional contact fields --}}

@@ -1,4 +1,19 @@
-@if($mobile)
+@if($floating)
+    {{-- Floating draggable button variant — the wrapper in the layout handles
+         positioning, dragging and the tap-to-open behaviour. --}}
+    <div class="relative flex items-center justify-center w-full h-full pointer-events-none select-none">
+        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z"/>
+        </svg>
+        @if($count > 0)
+            <span wire:key="cart-badge-float-{{ $count }}"
+                  class="cart-badge-pop absolute -top-1 -right-1 min-w-[19px] h-[19px] px-1 rounded-full flex items-center justify-center text-[10px] font-bold leading-none shadow"
+                  style="background: #E53935; color: white; border: 2px solid #0F2419;">
+                {{ $count > 9 ? '9+' : $count }}
+            </span>
+        @endif
+    </div>
+@elseif($mobile)
     {{-- Mobile bottom-nav tab variant --}}
     <a href="/cart"
        class="relative flex flex-col items-center justify-center flex-1 py-1 {{ request()->is('cart') ? 'text-gold' : 'text-white/60' }}">

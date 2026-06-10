@@ -20,6 +20,13 @@ let fetchTimer = null;
 let jitterTimer = null;
 let errorCount = 0;
 
+// Admin kill-switch (Site Settings → Live Rates). When the API reports
+// live_rates_enabled: false, we freeze every price at its last real value:
+// no jitter, no flashes, no updates. Polling continues (slower) so rates
+// resume automatically when the admin switches it back on.
+let liveEnabled = true;
+const DISABLED_POLL_INTERVAL = 15000;
+
 // ── Jitter amounts per price category ────────────────────────────────
 
 function jitterAmount(pkey) {
@@ -124,6 +131,23 @@ async function fetchPrices() {
         const data = await res.json();
         errorCount = 0;
 
+        const wasEnabled = liveEnabled;
+        liveEnabled = data.live_rates_enabled !== false;
+        document.body.classList.toggle('live-rates-off', !liveEnabled);
+
+        if (!liveEnabled) {
+            // Just switched off (or still off): pin every cell to its last
+            // real value so any cosmetic jitter is wiped, then go dormant.
+            document.querySelectorAll('[data-pkey][data-price]').forEach((el) => {
+                const base = lastValues.get(el.dataset.pkey);
+                if (base != null) el.textContent = formatPrice(el.dataset.pkey, base);
+                el.classList.remove('dir-up', 'dir-down', 'flash-up', 'flash-down');
+            });
+            fetchTimer = setTimeout(fetchPrices, DISABLED_POLL_INTERVAL);
+            return;
+        }
+        if (!wasEnabled) directions.clear(); // fresh start after re-enable
+
         document.querySelectorAll('[data-pkey][data-price]').forEach((el) => {
             const pkey = el.dataset.pkey;
             const newVal = resolvePrice(data, pkey);
@@ -179,6 +203,8 @@ function pairKey(pkey) {
 const groupOffsets = new Map();
 
 function applyJitter() {
+    if (!liveEnabled) return;
+
     groupOffsets.clear();
 
     document.querySelectorAll('[data-pkey][data-price]').forEach((el) => {
