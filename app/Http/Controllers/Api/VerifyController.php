@@ -19,12 +19,23 @@ class VerifyController extends Controller
     public function verify(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'serial' => 'required|string|min:5|max:80',
+            'serial' => 'required_without:token|string|min:5|max:80',
+            'token' => 'required_without:serial|string|min:5|max:120',
             'customer_name' => 'nullable|string|max:100',
             'customer_phone' => 'nullable|string|max:30',
         ]);
 
-        $normalized = strtoupper(trim($data['serial']));
+        // QR stickers encode /v/{verification_token}; manual entry uses the
+        // printed serial number. Support both.
+        if (!empty($data['token'])) {
+            $item = InventoryItem::with('product.productCategory')
+                ->where('verification_token', trim($data['token']))
+                ->first();
+            $normalized = strtoupper(trim($data['serial'] ?? ($item?->serial_number ?? $data['token'])));
+        } else {
+            $normalized = strtoupper(trim($data['serial']));
+            $item = null;
+        }
 
         // Stored serials carry the IBE- prefix; accept entries without it too.
         $candidates = array_unique([
@@ -32,7 +43,7 @@ class VerifyController extends Controller
             str_starts_with($normalized, 'IBE-') ? $normalized : 'IBE-' . $normalized,
         ]);
 
-        $item = InventoryItem::with('product.productCategory')
+        $item ??= InventoryItem::with('product.productCategory')
             ->whereIn('serial_number', $candidates)
             ->first();
 
