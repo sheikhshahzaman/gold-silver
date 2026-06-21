@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Models\Setting;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Concerns\InteractsWithForms;
@@ -43,6 +44,9 @@ class SiteSettings extends Page implements HasForms
             'live_rates_enabled' => Setting::get('live_rates_enabled', '1') === '1',
             'international_spread_gold_pct' => (float) Setting::get('international_spread_gold_pct', 0.05),
             'international_spread_silver_pct' => (float) Setting::get('international_spread_silver_pct', 0.1),
+            'silver_note_active' => Setting::get('silver_note_active', '0') === '1',
+            'silver_note_en' => Setting::get('silver_note_en', ''),
+            'silver_note_ur' => Setting::get('silver_note_ur', ''),
         ]);
     }
 
@@ -84,6 +88,22 @@ class SiteSettings extends Page implements HasForms
                             ->maxValue(5)
                             ->step(0.01)
                             ->suffix('%'),
+                    ]),
+                Section::make('Silver Note (mobile app)')
+                    ->description('Optional note shown under the silver table in the app. Turn it on and add text to display it; leave it off to hide it.')
+                    ->schema([
+                        Toggle::make('silver_note_active')
+                            ->label('Show silver note in the app')
+                            ->onColor('success')
+                            ->offColor('gray'),
+                        Textarea::make('silver_note_en')
+                            ->label('Note (English)')
+                            ->rows(2)
+                            ->maxLength(500),
+                        Textarea::make('silver_note_ur')
+                            ->label('Note (Urdu)')
+                            ->rows(2)
+                            ->maxLength(500),
                     ]),
             ])
             ->statePath('data');
@@ -154,6 +174,17 @@ class SiteSettings extends Page implements HasForms
             Setting::set('international_spread_silver_pct', (float) $data['international_spread_silver_pct']);
             Cache::forget('setting.intl_spread_silver');
         }
+
+        if (array_key_exists('silver_note_active', $data)) {
+            Setting::set('silver_note_active', $data['silver_note_active'] ? '1' : '0');
+        }
+        if (array_key_exists('silver_note_en', $data)) {
+            Setting::set('silver_note_en', (string) ($data['silver_note_en'] ?? ''));
+        }
+        if (array_key_exists('silver_note_ur', $data)) {
+            Setting::set('silver_note_ur', (string) ($data['silver_note_ur'] ?? ''));
+        }
+        Cache::forget('api.silver_note');
 
         Notification::make()
             ->title('Site settings saved successfully.')

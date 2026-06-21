@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\PageController;
 use App\Http\Controllers\Api\PriceController;
 use App\Http\Controllers\Api\SettingsController;
+use App\Http\Controllers\Api\SilverNoteController;
 use App\Http\Controllers\Api\TickerController;
 use App\Http\Controllers\Api\VerifyController;
 use Illuminate\Support\Facades\Route;
@@ -20,6 +21,7 @@ Route::middleware('throttle:120,1')->group(function () {
     Route::get('/app-config', [SettingsController::class, 'appConfig']);
     Route::get('/pages', [PageController::class, 'index']);
     Route::get('/pages/{slug}', [PageController::class, 'show']);
+    Route::get('/silver-note', [SilverNoteController::class, 'show']);
     Route::get('/orders/{orderNumber}', [OrderController::class, 'show']);
 });
 

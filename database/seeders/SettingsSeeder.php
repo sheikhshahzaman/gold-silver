@@ -54,6 +54,10 @@ class SettingsSeeder extends Seeder
             'manual_silver_5_gram' => '3172',
             'manual_silver_gram' => '634',
             'manual_silver_kg' => '634467',
+            // Optional silver note shown under the silver table in the app (off by default).
+            'silver_note_active' => '0',
+            'silver_note_en' => '',
+            'silver_note_ur' => '',
         ];
 
         foreach ($rateDefaults as $key => $value) {
