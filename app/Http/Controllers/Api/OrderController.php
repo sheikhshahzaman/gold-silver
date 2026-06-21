@@ -9,6 +9,7 @@ use App\Models\Payment;
 use App\Models\Product;
 use App\Models\Setting;
 use App\Services\Cart;
+use App\Services\PriceEngine\PriceCacheManager;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -88,6 +89,71 @@ class OrderController extends Controller
         ], 201);
     }
 
+    /**
+     * Create a single-item Buy/Sell order priced by metal weight (the app's
+     * Buy & Sell wizards). Mirrors the website's BuyPage/SellPage::placeOrder,
+     * but the unit price is ALWAYS re-derived server-side from the live price
+     * cache — the client only sends the selection, never the price.
+     */
+    public function storeMetalOrder(Request $request, PriceCacheManager $cacheManager): JsonResponse
+    {
+        $data = $request->validate([
+            'customer_name' => 'required|string|min:2|max:255',
+            'customer_phone' => 'required|string|min:10|max:20',
+            'type' => 'required|in:buy,sell',
+            'metal' => 'required|in:gold,silver',
+            'karat' => 'nullable|string|max:10',
+            'unit' => 'required|string|max:20',
+            'quantity' => 'required|numeric|min:0.0001|max:100000',
+        ]);
+
+        $karat = $data['metal'] === 'gold' ? strtolower($data['karat'] ?? '') : null;
+
+        // Whitelist selections so a tampered request can't reach an unexpected
+        // price bucket. These mirror the app's Buy/Sell wizard options.
+        $allowedKarats = ['24k', '22k', '21k', '18k'];
+        $allowedGoldUnits = ['gram', 'tola'];
+        $allowedSilverUnits = ['kg', '10_tola', '10_tola_qr', '5_tola', 'tola', 'gram'];
+
+        if ($data['metal'] === 'gold') {
+            if (!in_array($karat, $allowedKarats, true) || !in_array($data['unit'], $allowedGoldUnits, true)) {
+                return response()->json(['message' => 'Invalid gold selection.'], 422);
+            }
+        } elseif (!in_array($data['unit'], $allowedSilverUnits, true)) {
+            return response()->json(['message' => 'Invalid silver selection.'], 422);
+        }
+
+        $prices = $cacheManager->getAllPrices();
+        $unitPrice = $this->resolveMetalUnitPrice($prices, $data['metal'], $karat, $data['unit'], $data['type']);
+
+        if ($unitPrice === null || $unitPrice <= 0) {
+            return response()->json([
+                'message' => 'Live price is currently unavailable. Please try again shortly.',
+            ], 422);
+        }
+
+        $quantity = (float) $data['quantity'];
+        $total = round($unitPrice * $quantity, 2);
+
+        $order = Order::create([
+            'type' => $data['type'],
+            'metal' => $data['metal'],
+            'karat' => $karat,
+            'quantity' => $quantity,
+            'unit' => $data['unit'],
+            'locked_price' => $unitPrice,
+            'total_amount' => $total,
+            'customer_name' => $data['customer_name'],
+            'customer_phone' => $data['customer_phone'],
+            'status' => 'pending',
+        ]);
+
+        return response()->json([
+            'order' => $this->orderPayload($order->fresh(['items', 'payment'])),
+            'payment_accounts' => $this->paymentAccounts(),
+        ], 201);
+    }
+
     public function show(string $orderNumber): JsonResponse
     {
         $order = Order::with(['items', 'payment'])
@@ -136,27 +202,113 @@ class OrderController extends Controller
 
     private function orderPayload(Order $order): array
     {
+        $items = $order->items->map(fn (OrderItem $i) => [
+            'product_name' => $i->product_name,
+            'metal' => $i->metal,
+            'karat' => $i->karat,
+            'quantity' => (float) $i->quantity,
+            'unit' => null,
+            'unit_price' => (float) $i->unit_price,
+            'line_total' => (float) $i->line_total,
+        ])->values()->all();
+
+        // Single-item Buy/Sell orders have no order_items rows — synthesize a
+        // display line from the metal columns so the app renders them uniformly.
+        $isMetalOrder = empty($items);
+        if ($isMetalOrder) {
+            $items[] = [
+                'product_name' => $this->metalLineLabel($order),
+                'metal' => $order->metal,
+                'karat' => $order->karat,
+                'quantity' => (float) $order->quantity,
+                'unit' => $order->unit,
+                'unit_price' => (float) $order->locked_price,
+                'line_total' => (float) $order->total_amount,
+            ];
+        }
+
         return [
             'order_number' => $order->order_number,
             'status' => $order->status,
+            'type' => $order->type,
             'customer_name' => $order->customer_name,
             'customer_phone' => $order->customer_phone,
             'total_amount' => (float) $order->total_amount,
             'created_at' => $order->created_at?->toIso8601String(),
-            'items' => $order->items->map(fn (OrderItem $i) => [
-                'product_name' => $i->product_name,
-                'metal' => $i->metal,
-                'karat' => $i->karat,
-                'quantity' => $i->quantity,
-                'unit_price' => (float) $i->unit_price,
-                'line_total' => (float) $i->line_total,
-            ])->values(),
+            'items' => $items,
             'payment' => $order->payment ? [
                 'method' => $order->payment->method,
                 'status' => $order->payment->status,
                 'reference_number' => $order->payment->reference_number,
             ] : null,
         ];
+    }
+
+    /**
+     * Re-derive the live unit price for a metal selection from the price cache.
+     * Returns null when the relevant rate isn't available. Mirrors the app's
+     * Buy/Sell pricing so the confirmed total matches what the user saw.
+     */
+    private function resolveMetalUnitPrice(array $prices, string $metal, ?string $karat, string $unit, string $type): ?float
+    {
+        $gramsPerTola = 11.6638038;
+
+        if ($metal === 'gold') {
+            // The app derives gold prices from the per-gram rate (tola = gram ×
+            // grams-per-tola); mirror that here so the confirmed total matches.
+            $perGram = $prices['gold'][$karat]['gram'][$type] ?? null;
+            if ($perGram === null) {
+                return null;
+            }
+            $perGram = (float) $perGram;
+            return $unit === 'tola' ? $perGram * $gramsPerTola : $perGram;
+        }
+
+        $silver = $prices['silver'] ?? [];
+        $perGram = isset($silver['gram'][$type]) ? (float) $silver['gram'][$type] : null;
+
+        $direct = fn (string $key) => isset($silver[$key][$type]) ? (float) $silver[$key][$type] : null;
+
+        return match ($unit) {
+            'kg' => $direct('kg') ?? ($perGram !== null ? $perGram * 1000 : null),
+            '10_tola', '10_tola_qr' => $direct('10_tola') ?? ($perGram !== null ? $perGram * $gramsPerTola * 10 : null),
+            '5_tola' => $perGram !== null ? $perGram * $gramsPerTola * 5 : null,
+            'tola' => $direct('tola') ?? ($perGram !== null ? $perGram * $gramsPerTola : null),
+            'gram' => $perGram,
+            default => null,
+        };
+    }
+
+    /** Human label for a synthesized Buy/Sell order line. */
+    private function metalLineLabel(Order $order): string
+    {
+        $metal = ucfirst((string) $order->metal);
+        $karat = $order->karat ? ' ' . strtoupper($order->karat) : '';
+        $type = ucfirst((string) $order->type);
+        $unitLabel = $this->unitLabel($order->unit);
+        $qty = rtrim(rtrim(number_format((float) $order->quantity, 4, '.', ''), '0'), '.');
+
+        if ($order->metal === 'gold') {
+            // Weight-based: e.g. "Gold 22K — 3.5 tola (Buy)"
+            return "{$metal}{$karat} — {$qty} {$unitLabel} ({$type})";
+        }
+
+        // Package-based silver: e.g. "Silver — 10 Tola (QR) (Sell)" / "… × 2"
+        $count = $qty === '1' ? '' : " × {$qty}";
+        return "{$metal} — {$unitLabel}{$count} ({$type})";
+    }
+
+    private function unitLabel(?string $unit): string
+    {
+        return match ($unit) {
+            'gram' => 'gram',
+            'tola' => 'Tola',
+            '5_tola' => '5 Tola',
+            '10_tola' => '10 Tola',
+            '10_tola_qr' => '10 Tola (QR)',
+            'kg' => '1 KG',
+            default => (string) $unit,
+        };
     }
 
     private function paymentAccounts(): array

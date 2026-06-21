@@ -57,11 +57,11 @@ class SiteSettings extends Page implements HasForms
                             ->placeholder('Islamabad Bullion Exchange'),
                     ]),
                 Section::make('Live Rates')
-                    ->description('Control the live-updating prices shown across the whole website.')
+                    ->description('Control the live ticking/fluctuation shown on BOTH the website and the mobile app.')
                     ->schema([
                         Toggle::make('live_rates_enabled')
-                            ->label('Live rate updates')
-                            ->helperText('ON: prices tick and refresh in real time on every page. OFF: prices freeze at their last values and all live indicators pause — visitors see static rates until you switch this back on.')
+                            ->label('Live rate updates (website + app)')
+                            ->helperText('Controls the on-screen ticking/fluctuation on BOTH the website and the mobile app. ON: prices tick and refresh in real time. OFF: prices freeze at their last values and all live indicators pause until you switch this back on. (Gold/silver values come from the "Gold & Silver Rates" page; this only controls the live movement effect.)')
                             ->onColor('success')
                             ->offColor('danger'),
                     ]),

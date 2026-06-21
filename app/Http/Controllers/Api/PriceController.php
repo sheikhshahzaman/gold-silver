@@ -31,6 +31,11 @@ class PriceController extends Controller
         $prices['live_rates_enabled'] = Cache::remember('setting.live_rates_enabled', 60,
             fn () => Setting::get('live_rates_enabled', '1')) === '1';
 
+        // Where the local gold/silver rates come from: 'manual' (admin-set) or
+        // 'live' (market). Spot USD/oz is always live. Informational for clients.
+        $prices['rate_mode'] = Cache::remember('setting.rate_mode', 60,
+            fn () => Setting::get('rate_mode', 'manual')) === 'live' ? 'live' : 'manual';
+
         return response()->json($prices, 200, ['Cache-Control' => 'no-store']);
     }
 }

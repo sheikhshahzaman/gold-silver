@@ -6,6 +6,7 @@ use App\Models\CurrencyRate;
 use App\Models\MetalPrice;
 use App\Models\PriceMargin;
 use App\Models\ScrapeLog;
+use App\Models\Setting;
 use App\Services\PriceEngine\Sources\ExchangeRateSource;
 use App\Services\PriceEngine\Sources\FawazCurrencySource;
 use App\Services\PriceEngine\Sources\GoldApiSource;
@@ -59,6 +60,8 @@ class PriceFetcher
     {
         $startTime = microtime(true);
 
+        $rateMode = $this->rateMode();
+
         // Strategy 1: PakGold scraper (direct PKR prices)
         $result = $this->tryPakGold();
 
@@ -73,19 +76,38 @@ class PriceFetcher
         }
 
         if ($result === null) {
-            Log::error('PriceFetcher: All price sources failed');
-            return false;
+            // Manual mode doesn't need a live source for gold/silver (they're
+            // admin-set), so fall back to the last spot/currency data in the DB
+            // and keep publishing. Only hard-fail when we're in live mode.
+            if ($rateMode !== 'manual') {
+                Log::error('PriceFetcher: All price sources failed');
+                return false;
+            }
+            $result = $this->databaseFallbackResult();
         }
 
         try {
             // Load margins from DB
             $margins = $this->loadMargins();
 
-            // Calculate and store gold prices
-            $goldCacheData = $this->processGoldPrices($result, $margins);
+            if ($rateMode === 'manual') {
+                // Gold: push the admin's per-karat per-tola rates through the same
+                // "direct price" path the scraper uses, so unit derivation and
+                // margins behave identically.
+                $result['gold_pkr_direct'] = true;
+                $result['gold_prices'] = $this->manualGoldDirectPrices();
 
-            // Calculate and store silver prices
-            $silverCacheData = $this->processSilverPrices($result, $margins);
+                $goldCacheData = $this->processGoldPrices($result, $margins);
+
+                // Silver: admin sets each unit's base directly (no tola derivation).
+                $silverCacheData = $this->processSilverPrices($result, $margins, $this->manualSilverPerUnit());
+            } else {
+                // Calculate and store gold prices
+                $goldCacheData = $this->processGoldPrices($result, $margins);
+
+                // Calculate and store silver prices
+                $silverCacheData = $this->processSilverPrices($result, $margins);
+            }
 
             // Store currency rates
             $currencyCacheData = $this->storeCurrencyRates($result);
@@ -350,53 +372,67 @@ class PriceFetcher
 
     /**
      * Process and store silver prices for all units.
+     *
+     * @param array|null $manualUnitBase When provided (manual mode), each unit's
+     *                                   base price is taken directly from this map
+     *                                   instead of being derived from a per-tola rate.
      */
-    private function processSilverPrices(array $result, array $margins): array
+    private function processSilverPrices(array $result, array $margins, ?array $manualUnitBase = null): array
     {
         $now = now();
         $cacheData = [];
 
-        $silverPerTola = null;
-
-        if (!empty($result['silver_pkr_direct']) && !empty($result['silver_prices'])) {
-            // Silver from PakGold now has 'reti' and 'pees' sub-keys
-            $silverPerTola = $result['silver_prices']['reti']['buy_per_tola']
-                ?? $result['silver_prices']['pees']['buy_per_tola']
-                ?? null;
-        }
-
-        if ($silverPerTola === null && isset($result['xag_usd']) && isset($result['usd_pkr'])) {
-            $silverPerTola = $this->calculator->ounceToPkrPerTola(
-                $result['xag_usd'],
-                $result['usd_pkr']
-            );
-        }
-
-        if ($silverPerTola === null || $silverPerTola <= 0) {
-            return $cacheData;
-        }
-
-        // Silver margins are now configured per unit (1 KG, 10 Tola, 1 Tola,
-        // 10 Gram, 5 Gram, 1 Gram). Each row's value is added directly to that
-        // unit's market price -- no tola-to-unit conversion happens here.
+        // Silver margins are configured per unit (1 KG, 10 Tola, 1 Tola, 10 Gram,
+        // 5 Gram, 1 Gram). Each row's value is added directly to that unit's price.
         $silverMarginsByUnit = $margins['silver_by_unit'] ?? [];
 
-        // Derive base buy/sell unit prices (no margin yet).
-        $unitPrices = $this->calculator->deriveAllUnitPrices($silverPerTola);
+        if ($manualUnitBase !== null) {
+            // Manual mode: admin-set base price for each unit, used as-is.
+            $unitPrices = $manualUnitBase;
+            $sellUnitPrices = $manualUnitBase;
+        } else {
+            $silverPerTola = null;
 
-        $silverSellPerTola = null;
-        if (!empty($result['silver_pkr_direct']) && !empty($result['silver_prices'])) {
-            $silverSellPerTola = $result['silver_prices']['reti']['sell_per_tola']
-                ?? $result['silver_prices']['pees']['sell_per_tola']
-                ?? null;
+            if (!empty($result['silver_pkr_direct']) && !empty($result['silver_prices'])) {
+                // Silver from PakGold now has 'reti' and 'pees' sub-keys
+                $silverPerTola = $result['silver_prices']['reti']['buy_per_tola']
+                    ?? $result['silver_prices']['pees']['buy_per_tola']
+                    ?? null;
+            }
+
+            if ($silverPerTola === null && isset($result['xag_usd']) && isset($result['usd_pkr'])) {
+                $silverPerTola = $this->calculator->ounceToPkrPerTola(
+                    $result['xag_usd'],
+                    $result['usd_pkr']
+                );
+            }
+
+            if ($silverPerTola === null || $silverPerTola <= 0) {
+                return $cacheData;
+            }
+
+            // Derive base buy/sell unit prices (no margin yet).
+            $unitPrices = $this->calculator->deriveAllUnitPrices($silverPerTola);
+
+            $silverSellPerTola = null;
+            if (!empty($result['silver_pkr_direct']) && !empty($result['silver_prices'])) {
+                $silverSellPerTola = $result['silver_prices']['reti']['sell_per_tola']
+                    ?? $result['silver_prices']['pees']['sell_per_tola']
+                    ?? null;
+            }
+            $sellUnitPrices = $silverSellPerTola
+                ? $this->calculator->deriveAllUnitPrices($silverSellPerTola)
+                : $unitPrices;
         }
-        $sellUnitPrices = $silverSellPerTola
-            ? $this->calculator->deriveAllUnitPrices($silverSellPerTola)
-            : $unitPrices;
 
         foreach (self::SILVER_UNITS as $unit) {
-            $basePrice = $unitPrices[$unit];
-            $baseSellPrice = $sellUnitPrices[$unit];
+            $basePrice = (float) ($unitPrices[$unit] ?? 0);
+            $baseSellPrice = (float) ($sellUnitPrices[$unit] ?? $basePrice);
+
+            // Skip units without a usable base price (e.g. unset manual value).
+            if ($basePrice <= 0) {
+                continue;
+            }
 
             // Per-unit margin, applied directly to that unit's price.
             $buyMarginForUnit  = $silverMarginsByUnit[$unit]['buy_margin']  ?? 0;
@@ -509,6 +545,114 @@ class PriceFetcher
         }
 
         return $margins;
+    }
+
+    /**
+     * Where local gold/silver rates come from: 'manual' (admin-set) or 'live' (market).
+     * Defaults to 'manual'. Spot USD/oz is always live regardless.
+     */
+    private function rateMode(): string
+    {
+        return Setting::get('rate_mode', 'manual') === 'live' ? 'live' : 'manual';
+    }
+
+    /**
+     * Build the gold "direct price" array (per-karat, buy/sell per tola) from the
+     * admin's manual rates. A karat left blank is derived from 24K by purity, so
+     * the admin can set just 24K if they prefer.
+     *
+     * @return array<string, array{buy_per_tola: float, sell_per_tola: float}>
+     */
+    private function manualGoldDirectPrices(): array
+    {
+        $base24k = (float) Setting::get('manual_gold_24k', 0);
+        $prices = [];
+
+        foreach (self::GOLD_KARATS as $karat) {
+            $perTola = (float) Setting::get('manual_gold_' . $karat, 0);
+
+            if ($perTola <= 0 && $base24k > 0) {
+                $perTola = $this->calculator->applyKaratPurity($base24k, $karat);
+            }
+
+            if ($perTola > 0) {
+                $prices[$karat] = [
+                    'buy_per_tola' => $perTola,
+                    'sell_per_tola' => $perTola,
+                ];
+            }
+        }
+
+        return $prices;
+    }
+
+    /**
+     * Admin-set silver base price per unit. A unit left blank is derived from the
+     * 1-tola rate, so the admin can set just tola if they prefer.
+     *
+     * @return array<string, float>
+     */
+    private function manualSilverPerUnit(): array
+    {
+        $baseTola = (float) Setting::get('manual_silver_tola', 0);
+        $derived = $baseTola > 0 ? $this->calculator->deriveAllUnitPrices($baseTola) : [];
+
+        $out = [];
+        foreach (self::SILVER_UNITS as $unit) {
+            $value = (float) Setting::get('manual_silver_' . $unit, 0);
+
+            if ($value <= 0) {
+                $value = (float) ($derived[$unit] ?? 0);
+            }
+
+            $out[$unit] = $value;
+        }
+
+        return $out;
+    }
+
+    /**
+     * Build a minimal result from the last values stored in the database. Used in
+     * manual mode when every upstream source is unavailable, so admin-set
+     * gold/silver can still publish alongside the last known spot/currency data.
+     */
+    private function databaseFallbackResult(): array
+    {
+        $result = ['source' => 'manual', 'currency_rates' => []];
+
+        $goldIntl = MetalPrice::where('metal', 'gold')->where('type', 'international')
+            ->orderByDesc('fetched_at')->first();
+        if ($goldIntl) {
+            $result['xau_usd'] = (float) $goldIntl->buy_price;
+        }
+
+        $silverIntl = MetalPrice::where('metal', 'silver')->where('type', 'international')
+            ->orderByDesc('fetched_at')->first();
+        if ($silverIntl) {
+            $result['xag_usd'] = (float) $silverIntl->buy_price;
+        }
+
+        $latestRate = CurrencyRate::orderByDesc('fetched_at')->first();
+        if ($latestRate) {
+            $pairToKey = [
+                'USD/PKR' => 'usd_pkr', 'USD Interbank' => 'usd_interbank', 'GBP/PKR' => 'gbp_pkr',
+                'EUR/PKR' => 'eur_pkr', 'SAR/PKR' => 'sar_pkr', 'AED/PKR' => 'aed_pkr', 'MYR/PKR' => 'myr_pkr',
+            ];
+            foreach (CurrencyRate::where('fetched_at', $latestRate->fetched_at)->get() as $rate) {
+                $key = $pairToKey[$rate->currency_pair] ?? null;
+                if ($key) {
+                    $result['currency_rates'][$key] = [
+                        'buy' => (float) $rate->buy_rate,
+                        'sell' => (float) $rate->sell_rate,
+                    ];
+                    if ($key === 'usd_pkr') {
+                        $result['usd_pkr'] = (float) $rate->buy_rate;
+                    }
+                }
+            }
+        }
+
+        return $result;
     }
 
     /**

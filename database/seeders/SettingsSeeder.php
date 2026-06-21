@@ -14,10 +14,10 @@ class SettingsSeeder extends Seeder
     {
         $settings = [
             'site_name' => 'Islamabad Bullion Exchange',
-            'contact_phone' => '+92-300-0000000',
-            'contact_whatsapp' => '+92-300-0000000',
-            'contact_email' => 'info@islamabadbullionexchange.com',
-            'contact_address' => 'Islamabad, Pakistan',
+            'contact_phone' => '+92-340-2786222',
+            'contact_whatsapp' => '+923409786111',
+            'contact_email' => 'thelegacyjewellers@gmail.com',
+            'contact_address' => 'Shop No 1, Ground Floor, Trade Center, F-7 Markaz Block 20-B F-7, Islamabad, 44210',
             'hours_mon_thu' => '10AM - 8PM',
             'hours_fri' => '3PM - 9:30PM',
             'hours_sat' => '12PM - 9:30PM',
@@ -33,6 +33,33 @@ class SettingsSeeder extends Seeder
                 ['key' => $key],
                 ['value' => $value]
             );
+        }
+
+        // Gold/silver rate controls. Created only when missing so re-seeding never
+        // clobbers values the admin has set in the panel. Defaults are realistic
+        // starting points; the admin adjusts them (or presses "Pull live rates").
+        $rateDefaults = [
+            // 'manual' = gold/silver use admin-entered rates; 'live' = market.
+            'rate_mode' => 'manual',
+            // Gold base price per TOLA, per karat.
+            'manual_gold_24k' => '445500',
+            'manual_gold_22k' => '408391',
+            'manual_gold_21k' => '389813',
+            'manual_gold_18k' => '334125',
+            'manual_gold_rawa' => '443273',
+            // Silver base price per the named unit.
+            'manual_silver_tola' => '7400',
+            'manual_silver_10_tola' => '74000',
+            'manual_silver_10_gram' => '6345',
+            'manual_silver_5_gram' => '3172',
+            'manual_silver_gram' => '634',
+            'manual_silver_kg' => '634467',
+        ];
+
+        foreach ($rateDefaults as $key => $value) {
+            if (Setting::get($key) === null) {
+                Setting::set($key, $value);
+            }
         }
     }
 }
