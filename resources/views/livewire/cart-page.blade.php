@@ -134,6 +134,10 @@
                                                 <div class="text-[11px]" style="color: #6B6B6B;">
                                                     + Rs {{ number_format($item->packaging_charge) }} packaging
                                                 </div>
+                                            @else
+                                                <div class="text-[11px] font-semibold" style="color: #1B8A3A;">
+                                                    Free packaging
+                                                </div>
                                             @endif
                                         @else
                                             <div class="text-sm italic" style="color: #6B6B6B;">

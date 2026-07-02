@@ -25,6 +25,10 @@
                                 <p class="text-[11px]" style="color: #888;">
                                     + Rs {{ number_format($line->packaging_charge) }} packaging × {{ $line->quantity }}
                                 </p>
+                            @else
+                                <p class="text-[11px] font-semibold" style="color: #1B8A3A;">
+                                    Free packaging
+                                </p>
                             @endif
                         </div>
                         <span class="font-semibold whitespace-nowrap" style="color: #0A2E23;">Rs {{ number_format($line->line_total) }}</span>

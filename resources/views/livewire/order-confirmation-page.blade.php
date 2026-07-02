@@ -62,6 +62,8 @@
                                 @endif
                                 @if($line->packaging_charge > 0)
                                     <br><span class="text-[11px]" style="color: #888;">+ Rs {{ number_format($line->packaging_charge) }} packaging × {{ $line->quantity }}</span>
+                                @else
+                                    <br><span class="text-[11px] font-semibold" style="color: #1B8A3A;">Free packaging</span>
                                 @endif
                             </span>
                             <span class="font-medium" style="color: #0A2E23;">Rs {{ number_format($line->line_total, 0) }}</span>
