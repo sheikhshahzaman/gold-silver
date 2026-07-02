@@ -32,7 +32,7 @@ class PriceCacheManager
     private const KEY_CRUDE_OIL = 'prices.crude_oil';
     private const KEY_PSX = 'prices.psx';
     private const KEY_LAST_UPDATED = 'prices.last_updated';
-    private const KEY_ALL = 'prices.all_prices';
+    public const KEY_ALL = 'prices.all_prices';
 
     /**
      * Store all price data in cache with TTL.

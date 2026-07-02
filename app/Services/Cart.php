@@ -33,14 +33,39 @@ class Cart
 
         if ($product->price_type === 'live' && $product->price_key) {
             $prices = app(PriceCacheManager::class)->getAllPrices();
-            $parts = explode('.', $product->price_key);
-            $base = null;
-            if (count($parts) === 3) {
-                $bucket = $parts[0] === 'silver' ? ($prices['silver'] ?? []) : ($prices['gold'] ?? []);
-                $base = $bucket[$parts[1]][$parts[2]]['buy'] ?? null;
-            } elseif (count($parts) === 2 && $parts[0] === 'silver') {
-                $base = $prices['silver'][$parts[1]]['buy'] ?? null;
+            $key = $product->price_key;
+            $bucket = null;
+            $unit = null;
+
+            // silver.<unit> — the unit token may itself contain dots (2.5_gram)
+            if (str_starts_with($key, 'silver.')) {
+                $bucket = $prices['silver'] ?? [];
+                $unit = substr($key, strlen('silver.'));
+            } elseif (str_starts_with($key, 'gold.')) {
+                // gold.<karat>.<unit>
+                $parts = explode('.', $key, 3);
+                if (count($parts) === 3) {
+                    $bucket = $prices['gold'][$parts[1]] ?? [];
+                    $unit = $parts[2];
+                }
             }
+
+            $base = null;
+            if ($bucket !== null && $unit !== null) {
+                // Exact board row first (silver units are priced independently).
+                $base = $bucket[$unit]['buy'] ?? null;
+
+                // No exact row: derive from the tola rate by weight so any
+                // catalog weight (2.5g, 50g, ounce, half tola...) gets a price.
+                if ($base === null) {
+                    $grams = self::UNIT_GRAMS[$unit] ?? null;
+                    $tola = $bucket['tola']['buy'] ?? null;
+                    if ($grams !== null && $tola !== null) {
+                        $base = round($tola / self::GRAMS_PER_TOLA * $grams, 2);
+                    }
+                }
+            }
+
             if ($base !== null) {
                 return $product->hasActiveDiscount() ? (float) $product->applyDiscount($base) : (float) $base;
             }
@@ -48,6 +73,25 @@ class Cart
 
         return null;
     }
+
+    public const GRAMS_PER_TOLA = 11.6638038;
+
+    /** Weight in grams for every unit a price key may reference. */
+    public const UNIT_GRAMS = [
+        'gram' => 1.0,
+        '2.5_gram' => 2.5,
+        '5_gram' => 5.0,
+        '10_gram' => 10.0,
+        '50_gram' => 50.0,
+        '100_gram' => 100.0,
+        'ounce' => 31.1034768,
+        'half_tola' => 5.8319019,
+        'tola' => 11.6638038,
+        '2_tola' => 23.3276076,
+        '5_tola' => 58.319019,
+        '10_tola' => 116.638038,
+        'kg' => 1000.0,
+    ];
 
     /**
      * Add a product to the cart (or bump quantity if it's already there).

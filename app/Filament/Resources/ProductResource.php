@@ -98,9 +98,11 @@ class ProductResource extends Resource
                         ->prefix('Rs')
                         ->nullable()
                         ->visible(fn ($get) => $get('price_type') === 'fixed'),
-                    TextInput::make('price_key')
-                        ->placeholder('e.g. gold.24k.tola')
-                        ->helperText('Format: metal.karat.unit (e.g. gold.24k.tola, silver.kg)')
+                    Select::make('price_key')
+                        ->label('Market rate')
+                        ->options(static::priceKeyOptions())
+                        ->searchable()
+                        ->helperText('Which metal, karat and weight this product is priced from. Weights without their own board rate are derived from the tola rate.')
                         ->visible(fn ($get) => $get('price_type') === 'live')
                         ->required(fn ($get) => $get('price_type') === 'live'),
                     TextInput::make('packaging_charge')
@@ -202,6 +204,50 @@ class ProductResource extends Resource
         return [
             InventoryItemsRelationManager::class,
         ];
+    }
+
+    /**
+     * Every valid live price key, grouped for the picker. Weights map to
+     * Cart::UNIT_GRAMS — anything without an exact board row is derived
+     * from the tola rate at lookup time.
+     */
+    public static function priceKeyOptions(): array
+    {
+        $unitLabels = [
+            'gram' => '1 Gram',
+            '2.5_gram' => '2.5 Gram',
+            '5_gram' => '5 Gram',
+            '10_gram' => '10 Gram',
+            '50_gram' => '50 Gram',
+            '100_gram' => '100 Gram',
+            'ounce' => '1 Ounce (31.1g)',
+            'half_tola' => 'Half Tola',
+            'tola' => '1 Tola',
+            '2_tola' => '2 Tola',
+            '5_tola' => '5 Tola',
+            '10_tola' => '10 Tola',
+            'kg' => '1 KG',
+        ];
+
+        $karats = ['24k' => '24K', 'rawa' => 'Rawa', '22k' => '22K', '21k' => '21K', '18k' => '18K'];
+
+        $options = [];
+        foreach ($karats as $karatKey => $karatLabel) {
+            $group = [];
+            foreach ($unitLabels as $unitKey => $unitLabel) {
+                if ($unitKey === 'kg') continue;
+                $group["gold.{$karatKey}.{$unitKey}"] = "Gold {$karatLabel} — {$unitLabel}";
+            }
+            $options["Gold {$karatLabel}"] = $group;
+        }
+
+        $silver = [];
+        foreach ($unitLabels as $unitKey => $unitLabel) {
+            $silver["silver.{$unitKey}"] = "Silver — {$unitLabel}";
+        }
+        $options['Silver'] = $silver;
+
+        return $options;
     }
 
     public static function getPages(): array
