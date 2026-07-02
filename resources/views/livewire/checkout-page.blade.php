@@ -212,12 +212,27 @@
                     </h3>
 
                     @if($paymentMethod === 'bank_transfer')
-                        <div class="space-y-2 text-sm">
-                            <div class="flex justify-between"><span style="color: #888;">Bank</span><span class="font-medium" style="color: #0A2E23;">{{ $paymentAccounts['bank_transfer']['bank_name'] }}</span></div>
-                            <div class="flex justify-between"><span style="color: #888;">Account Title</span><span class="font-medium" style="color: #0A2E23;">{{ $paymentAccounts['bank_transfer']['account_title'] }}</span></div>
-                            <div class="flex justify-between"><span style="color: #888;">Account Number</span><span class="font-medium" style="color: #0A2E23;">{{ $paymentAccounts['bank_transfer']['account_number'] }}</span></div>
-                            <div class="flex justify-between"><span style="color: #888;">IBAN</span><span class="font-medium break-all" style="color: #0A2E23;">{{ $paymentAccounts['bank_transfer']['iban'] }}</span></div>
-                        </div>
+                        @php $bank = array_filter($paymentAccounts['bank_transfer'] ?? []); @endphp
+                        @if($bank)
+                            <div class="space-y-2 text-sm">
+                                @if(!empty($bank['bank_name']))
+                                    <div class="flex justify-between"><span style="color: #888;">Bank</span><span class="font-medium" style="color: #0A2E23;">{{ $bank['bank_name'] }}</span></div>
+                                @endif
+                                @if(!empty($bank['account_title']))
+                                    <div class="flex justify-between"><span style="color: #888;">Account Title</span><span class="font-medium" style="color: #0A2E23;">{{ $bank['account_title'] }}</span></div>
+                                @endif
+                                @if(!empty($bank['account_number']))
+                                    <div class="flex justify-between"><span style="color: #888;">Account Number</span><span class="font-medium" style="color: #0A2E23;">{{ $bank['account_number'] }}</span></div>
+                                @endif
+                                @if(!empty($bank['iban']))
+                                    <div class="flex justify-between"><span style="color: #888;">IBAN</span><span class="font-medium break-all" style="color: #0A2E23;">{{ $bank['iban'] }}</span></div>
+                                @endif
+                            </div>
+                        @else
+                            <p class="text-sm" style="color: #6B6B6B;">
+                                Contact us on WhatsApp or phone for our bank account details before sending payment.
+                            </p>
+                        @endif
                     @endif
 
                     <div class="mt-4 p-3 rounded-lg text-xs" style="background: rgba(198,150,60,0.1); color: #A67922; border: 1px solid rgba(198,150,60,0.2);">
