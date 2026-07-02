@@ -30,10 +30,11 @@ const DISABLED_POLL_INTERVAL = 15000;
 // ── Jitter amounts per price category ────────────────────────────────
 
 function jitterAmount(pkey, base) {
-    // Gold/silver international spot ticks as a tiny % of price (0.10%-0.15%)
-    // rather than a flat dollar amount, so it scales sensibly with price level.
+    // Gold/silver international spot ticks in the cents only (10-35¢);
+    // applyJitter() additionally locks the dollar figure so digits before
+    // the decimal point never move.
     if (pkey.startsWith('intl-xau') || pkey.startsWith('intl-xag')) {
-        return base * (0.0010 + Math.random() * 0.0005);
+        return 0.10 + Math.random() * 0.25;
     }
     if (pkey.startsWith('intl-xa'))          return 1;       // other USD intl metals ±$1
     if (pkey.startsWith('platinum-intl'))    return 1;
@@ -231,7 +232,13 @@ function applyJitter() {
             offset = groupOffsets.get(group);
         }
 
-        const jittered = base + offset;
+        let jittered = base + offset;
+        // Spot gold/silver: only the cents move — clamp inside the same
+        // dollar so the integer part of the price never changes on screen.
+        if (pkey.startsWith('intl-xau') || pkey.startsWith('intl-xag')) {
+            const dollars = Math.floor(base);
+            jittered = Math.min(dollars + 0.99, Math.max(dollars, jittered));
+        }
         el.textContent = formatPrice(pkey, jittered);
 
         // Cosmetic direction class based on jitter sign
