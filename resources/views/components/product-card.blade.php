@@ -21,8 +21,8 @@
     $phIcon = $placeholderIcons[$phKey] ?? $placeholderIcons['bars'];
     $prodBg = $prod->metal === 'silver' ? 'linear-gradient(140deg,#F2F2F2,#D5D5D5 60%,#C2C2C2)' : 'linear-gradient(140deg,#FBF0D0,#F5E08B 60%,#EBCB66)';
 
-    {{-- Central resolver: exact board rows or tola-derived weights (ounce,
-         2.5g, half tola...) — keep in sync with Cart::unitQuoteFor. --}}
+    // Central resolver: exact board rows or tola-derived weights (ounce,
+    // 2.5g, half tola...) — see Cart::unitQuoteFor.
     $liveQuote = app(\App\Services\Cart::class)->unitQuoteFor($prod);
     $livePrice = $liveQuote['buy'] ?? null;
     $liveSell = $liveQuote['sell'] ?? null;
