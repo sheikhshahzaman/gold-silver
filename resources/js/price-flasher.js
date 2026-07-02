@@ -29,14 +29,19 @@ const DISABLED_POLL_INTERVAL = 15000;
 
 // ── Jitter amounts per price category ────────────────────────────────
 
-function jitterAmount(pkey) {
-    if (pkey.startsWith('intl-xa'))          return 1;       // USD intl metals ±$1
+function jitterAmount(pkey, base) {
+    // Gold/silver international spot ticks as a tiny % of price (0.10%-0.15%)
+    // rather than a flat dollar amount, so it scales sensibly with price level.
+    if (pkey.startsWith('intl-xau') || pkey.startsWith('intl-xag')) {
+        return base * (0.0010 + Math.random() * 0.0005);
+    }
+    if (pkey.startsWith('intl-xa'))          return 1;       // other USD intl metals ±$1
     if (pkey.startsWith('platinum-intl'))    return 1;
     if (pkey.startsWith('palladium-intl'))   return 1;
     if (pkey.startsWith('platinum-local'))   return 5;       // PKR local metals ±5
     if (pkey.startsWith('palladium-local'))  return 5;
-    if (pkey.startsWith('gold-'))            return 5;       // PKR gold ±5 Rs
-    if (pkey.startsWith('silver-'))          return 5;       // PKR silver ±5 Rs
+    if (pkey.startsWith('gold-'))            return 10;      // PKR gold ±10 Rs max
+    if (pkey.startsWith('silver-'))          return 10;      // PKR silver ±10 Rs max
     if (pkey.startsWith('crude-oil'))        return 0.25;    // USD crude ±$0.25
     if (pkey.startsWith('psx-'))             return 10;      // PSX index ±10
     if (pkey.startsWith('currency-'))        return 0.10;    // PKR currencies ±0.10
@@ -212,7 +217,7 @@ function applyJitter() {
         const base = lastValues.get(pkey);
         if (base == null) return;
 
-        const range = jitterAmount(pkey);
+        const range = jitterAmount(pkey, base);
         const { group, side } = pairKey(pkey);
 
         let offset;

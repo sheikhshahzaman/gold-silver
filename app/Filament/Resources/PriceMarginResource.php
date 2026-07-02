@@ -22,9 +22,19 @@ class PriceMarginResource extends Resource
 
     protected static string | \UnitEnum | null $navigationGroup = 'Price Management';
 
-    protected static ?int $navigationSort = 1;
+    protected static ?int $navigationSort = 0;
 
-    protected static ?string $navigationLabel = 'Price Margins';
+    protected static ?string $navigationLabel = 'Gold & Silver Prices';
+
+    public static function getModelLabel(): string
+    {
+        return 'Gold & Silver Price';
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return 'Gold & Silver Prices';
+    }
 
     /**
      * Human-readable label for a row: "Gold — 24K" or "Silver — 1 Tola".
@@ -65,25 +75,27 @@ class PriceMarginResource extends Resource
     {
         return $schema
             ->components([
-                Section::make('Margin Settings')
-                    ->description('Current Market Price + Your Margin = Displayed Price. Use a positive value to add to the live rate, or a negative value (e.g. -500) to deduct from it. Gold margins are stored per tola and auto-converted to other units. Silver margins are stored per the selected weight and applied directly to that unit\'s price.')
+                Section::make('Price Settings')
+                    ->description('Type the final price customers will see — no market rate or margin involved. Gold prices are entered per tola and auto-converted to other units. Silver prices are entered per the selected weight and used exactly as typed.')
                     ->icon('heroicon-o-information-circle')
                     ->schema([
                         Placeholder::make('item')
                             ->label('You are editing')
                             ->content(fn ($record) => self::itemLabel($record))
                             ->columnSpanFull(),
-                        TextInput::make('buy_margin')
-                            ->label(fn ($record) => 'Buy Margin (' . self::marginUnitLabel($record) . ')')
-                            ->helperText('Positive adds to live rate · Negative deducts (e.g. -500)')
+                        TextInput::make('manual_buy_price')
+                            ->label(fn ($record) => 'Buy Price (' . self::marginUnitLabel($record) . ')')
+                            ->helperText('What you pay the customer when they sell to you')
                             ->numeric()
+                            ->minValue(0)
                             ->prefix('Rs')
                             ->required()
                             ->step(0.01),
-                        TextInput::make('sell_margin')
-                            ->label(fn ($record) => 'Sell Margin (' . self::marginUnitLabel($record) . ')')
-                            ->helperText('Positive adds to live rate · Negative deducts (e.g. -500)')
+                        TextInput::make('manual_sell_price')
+                            ->label(fn ($record) => 'Sell Price (' . self::marginUnitLabel($record) . ')')
+                            ->helperText('What the customer pays when they buy from you')
                             ->numeric()
+                            ->minValue(0)
                             ->prefix('Rs')
                             ->required()
                             ->step(0.01),
@@ -93,7 +105,7 @@ class PriceMarginResource extends Resource
     }
 
     /**
-     * Text shown after "Buy/Sell Margin" in the form: "per Tola" for gold,
+     * Text shown after "Buy/Sell Price" in the form: "per Tola" for gold,
      * "per 10 Gram" / "per 1 KG" / ... for silver (matches the row's unit).
      */
     public static function marginUnitLabel(?PriceMargin $record): string
@@ -116,12 +128,12 @@ class PriceMarginResource extends Resource
                     ->state(fn ($record) => self::itemLabel($record))
                     ->color(fn ($record): string => $record->metal === 'gold' ? 'warning' : 'gray')
                     ->sortable(['metal', 'karat', 'unit']),
-                Tables\Columns\TextColumn::make('buy_margin')
-                    ->label('Buy Margin (Rs)')
+                Tables\Columns\TextColumn::make('manual_buy_price')
+                    ->label('Buy Price')
                     ->money('PKR')
                     ->sortable(),
-                Tables\Columns\TextColumn::make('sell_margin')
-                    ->label('Sell Margin (Rs)')
+                Tables\Columns\TextColumn::make('manual_sell_price')
+                    ->label('Sell Price')
                     ->money('PKR')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('user.name')

@@ -101,7 +101,15 @@ class ProductResource extends Resource
                     TextInput::make('price_key')
                         ->placeholder('e.g. gold.24k.tola')
                         ->helperText('Format: metal.karat.unit (e.g. gold.24k.tola, silver.kg)')
-                        ->visible(fn ($get) => $get('price_type') === 'live'),
+                        ->visible(fn ($get) => $get('price_type') === 'live')
+                        ->required(fn ($get) => $get('price_type') === 'live'),
+                    TextInput::make('packaging_charge')
+                        ->label('Packaging Charge (per unit)')
+                        ->helperText('Shown to the customer as a separate line when buying this product.')
+                        ->numeric()
+                        ->minValue(0)
+                        ->default(0)
+                        ->prefix('Rs'),
                 ])
                 ->columns(2),
 
@@ -155,8 +163,19 @@ class ProductResource extends Resource
                 Tables\Columns\TextColumn::make('price_type')->badge()->color(fn ($state) => match ($state) {
                     'live' => 'success', 'fixed' => 'info', default => 'warning',
                 }),
-                Tables\Columns\TextColumn::make('fixed_price')->money('PKR')->label('Price')
-                    ->visible(fn ($record) => $record?->price_type === 'fixed'),
+                // One price column for every price_type: live rows compute the
+                // current live price, fixed rows show fixed_price. A per-record
+                // visible() closure can't do this — column visibility is
+                // table-wide in Filament, so $record is always null there.
+                Tables\Columns\TextColumn::make('live_price_preview')->money('PKR')->label('Current Price')
+                    ->getStateUsing(fn ($record) => match ($record->price_type) {
+                        'live' => app(\App\Services\Cart::class)->unitPriceFor($record),
+                        'fixed' => $record->fixed_price,
+                        default => null,
+                    })
+                    ->placeholder(fn ($record) => $record?->price_type === 'live' ? 'No price key set' : '—'),
+                Tables\Columns\TextColumn::make('packaging_charge')->money('PKR')->label('Packaging')
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('stock_count')
                     ->label('Stock')
                     ->getStateUsing(fn ($record) => $record->stock_count)

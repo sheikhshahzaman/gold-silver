@@ -13,7 +13,7 @@ class Product extends Model
     protected $fillable = [
         'name', 'slug', 'description', 'weight', 'metal', 'karat',
         'image', 'gallery', 'category', 'category_id', 'price_type',
-        'fixed_price', 'discount_type', 'discount_value',
+        'fixed_price', 'packaging_charge', 'discount_type', 'discount_value',
         'discount_starts_at', 'discount_ends_at',
         'price_key', 'is_active', 'sort_order',
     ];
@@ -21,6 +21,7 @@ class Product extends Model
     protected $casts = [
         'is_active' => 'boolean',
         'fixed_price' => 'decimal:2',
+        'packaging_charge' => 'decimal:2',
         'discount_value' => 'decimal:2',
         'gallery' => 'array',
         'discount_starts_at' => 'datetime',

@@ -2,6 +2,7 @@
 
 namespace App\Providers\Filament;
 
+use App\Auth\MultiFactor\WhatsAppAuthentication;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -28,6 +29,9 @@ class AdminPanelProvider extends PanelProvider
             ->path('admin')
             ->brandName('IBE Admin')
             ->login()
+            ->multiFactorAuthentication([
+                WhatsAppAuthentication::make(),
+            ], isRequired: false)
             ->darkMode(true)
             ->colors([
                 'primary' => Color::Amber,

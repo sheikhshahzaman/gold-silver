@@ -53,8 +53,9 @@ class OrderController extends Controller
                 ], 422);
             }
 
-            $lines[] = ['product' => $product, 'quantity' => (int) $line['quantity'], 'unit' => $unit];
-            $total += $unit * $line['quantity'];
+            $packaging = (float) $product->packaging_charge;
+            $lines[] = ['product' => $product, 'quantity' => (int) $line['quantity'], 'unit' => $unit, 'packaging' => $packaging];
+            $total += ($unit + $packaging) * $line['quantity'];
         }
 
         $order = DB::transaction(function () use ($data, $lines, $total) {
@@ -76,7 +77,8 @@ class OrderController extends Controller
                     'karat' => $line['product']->karat,
                     'quantity' => $line['quantity'],
                     'unit_price' => $line['unit'],
-                    'line_total' => $line['unit'] * $line['quantity'],
+                    'packaging_charge' => $line['packaging'],
+                    'line_total' => ($line['unit'] + $line['packaging']) * $line['quantity'],
                 ]);
             }
 
@@ -179,9 +181,21 @@ class OrderController extends Controller
         }
 
         $data = $request->validate([
-            'method' => 'required|in:easypaisa,jazzcash,raast,bank_transfer',
+            'method' => 'required|in:bank_transfer',
+            'delivery_method' => 'required|in:pickup,delivery',
+            'delivery_address' => 'required_if:delivery_method,delivery|nullable|string|max:1000',
             'proof_image' => 'required|image|max:5120',
             'reference_number' => 'nullable|string|max:255',
+        ]);
+
+        $deliveryCharge = $data['delivery_method'] === 'delivery'
+            ? (float) Setting::get('delivery_charge', 0)
+            : 0.0;
+
+        $order->update([
+            'delivery_method' => $data['delivery_method'],
+            'delivery_address' => $data['delivery_method'] === 'delivery' ? $data['delivery_address'] : null,
+            'delivery_charge' => $deliveryCharge,
         ]);
 
         $path = $request->file('proof_image')->store('payment-proofs', 'public');
@@ -189,7 +203,7 @@ class OrderController extends Controller
         Payment::create([
             'order_id' => $order->id,
             'method' => $data['method'],
-            'amount' => $order->total_amount,
+            'amount' => $order->fresh()->grand_total,
             'proof_image' => $path,
             'reference_number' => $data['reference_number'] ?? null,
             'status' => 'pending',
@@ -209,11 +223,14 @@ class OrderController extends Controller
             'quantity' => (float) $i->quantity,
             'unit' => null,
             'unit_price' => (float) $i->unit_price,
+            'packaging_charge' => (float) $i->packaging_charge,
+            'packaging_total' => (float) $i->packaging_total,
             'line_total' => (float) $i->line_total,
         ])->values()->all();
 
         // Single-item Buy/Sell orders have no order_items rows — synthesize a
         // display line from the metal columns so the app renders them uniformly.
+        // No packaging charge applies here (it's a per-product-catalog concept).
         $isMetalOrder = empty($items);
         if ($isMetalOrder) {
             $items[] = [
@@ -223,6 +240,8 @@ class OrderController extends Controller
                 'quantity' => (float) $order->quantity,
                 'unit' => $order->unit,
                 'unit_price' => (float) $order->locked_price,
+                'packaging_charge' => 0.0,
+                'packaging_total' => 0.0,
                 'line_total' => (float) $order->total_amount,
             ];
         }
@@ -234,6 +253,10 @@ class OrderController extends Controller
             'customer_name' => $order->customer_name,
             'customer_phone' => $order->customer_phone,
             'total_amount' => (float) $order->total_amount,
+            'delivery_method' => $order->delivery_method,
+            'delivery_address' => $order->delivery_address,
+            'delivery_charge' => (float) $order->delivery_charge,
+            'grand_total' => (float) $order->grand_total,
             'created_at' => $order->created_at?->toIso8601String(),
             'items' => $items,
             'payment' => $order->payment ? [
@@ -314,18 +337,6 @@ class OrderController extends Controller
     private function paymentAccounts(): array
     {
         return [
-            'easypaisa' => [
-                'number' => Setting::get('payment_easypaisa_number', ''),
-                'name' => Setting::get('payment_easypaisa_name', ''),
-            ],
-            'jazzcash' => [
-                'number' => Setting::get('payment_jazzcash_number', ''),
-                'name' => Setting::get('payment_jazzcash_name', ''),
-            ],
-            'raast' => [
-                'id' => Setting::get('payment_raast_id', ''),
-                'name' => Setting::get('payment_raast_name', ''),
-            ],
             'bank_transfer' => [
                 'bank_name' => Setting::get('payment_bank_name', ''),
                 'account_title' => Setting::get('payment_bank_account_title', ''),

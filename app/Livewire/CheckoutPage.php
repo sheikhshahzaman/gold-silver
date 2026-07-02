@@ -23,8 +23,12 @@ class CheckoutPage extends Component
     public string $customerName = '';
     public string $customerPhone = '';
 
-    // Step 2: Payment method
-    public string $paymentMethod = '';
+    // Step 2: Payment method + delivery
+    // Only bank transfer is offered, so it's pre-selected — nothing to choose.
+    public string $paymentMethod = 'bank_transfer';
+    public string $deliveryMethod = 'pickup';
+    public string $deliveryAddress = '';
+    public float $deliveryCharge = 0;
 
     // Step 3: Proof upload
     public $proofImage = null;
@@ -42,6 +46,20 @@ class CheckoutPage extends Component
             ->firstOrFail();
 
         $this->loadPaymentAccounts();
+        $this->deliveryCharge = (float) Setting::get('delivery_charge', 0);
+    }
+
+    public function selectDeliveryMethod(string $method): void
+    {
+        $this->deliveryMethod = $method;
+    }
+
+    /** Total the customer actually pays: product total + delivery (0 for pickup). */
+    public function grandTotal(): float
+    {
+        $delivery = $this->deliveryMethod === 'delivery' ? $this->deliveryCharge : 0;
+
+        return (float) $this->order->total_amount + $delivery;
     }
 
     public function goToStep2(): void
@@ -71,9 +89,18 @@ class CheckoutPage extends Component
     public function goToStep3(): void
     {
         $this->validate([
-            'paymentMethod' => 'required|in:easypaisa,jazzcash,raast,bank_transfer',
+            'paymentMethod' => 'required|in:bank_transfer',
+            'deliveryMethod' => 'required|in:pickup,delivery',
+            'deliveryAddress' => 'required_if:deliveryMethod,delivery|nullable|string|max:1000',
         ], [
             'paymentMethod.required' => 'Please select a payment method.',
+            'deliveryAddress.required_if' => 'Please enter your delivery address.',
+        ]);
+
+        $this->order->update([
+            'delivery_method' => $this->deliveryMethod,
+            'delivery_address' => $this->deliveryMethod === 'delivery' ? $this->deliveryAddress : null,
+            'delivery_charge' => $this->deliveryMethod === 'delivery' ? $this->deliveryCharge : 0,
         ]);
 
         $this->step = 3;
@@ -118,7 +145,7 @@ class CheckoutPage extends Component
         Payment::create([
             'order_id' => $this->order->id,
             'method' => $this->paymentMethod,
-            'amount' => $this->order->total_amount,
+            'amount' => $this->order->fresh()->grand_total,
             'proof_image' => $path,
             'reference_number' => $this->referenceNumber ?: null,
             'status' => 'pending',
@@ -132,18 +159,6 @@ class CheckoutPage extends Component
     private function loadPaymentAccounts(): void
     {
         $this->paymentAccounts = [
-            'easypaisa' => [
-                'number' => Setting::get('payment_easypaisa_number', ''),
-                'name' => Setting::get('payment_easypaisa_name', ''),
-            ],
-            'jazzcash' => [
-                'number' => Setting::get('payment_jazzcash_number', ''),
-                'name' => Setting::get('payment_jazzcash_name', ''),
-            ],
-            'raast' => [
-                'id' => Setting::get('payment_raast_id', ''),
-                'name' => Setting::get('payment_raast_name', ''),
-            ],
             'bank_transfer' => [
                 'bank_name' => Setting::get('payment_bank_name', ''),
                 'account_title' => Setting::get('payment_bank_account_title', ''),

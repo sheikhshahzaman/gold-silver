@@ -21,6 +21,11 @@
                                 {{ $line->quantity }} × Rs {{ number_format($line->unit_price) }}
                                 @if($line->product_weight) &middot; {{ $line->product_weight }} @endif
                             </p>
+                            @if($line->packaging_charge > 0)
+                                <p class="text-[11px]" style="color: #888;">
+                                    + Rs {{ number_format($line->packaging_charge) }} packaging × {{ $line->quantity }}
+                                </p>
+                            @endif
                         </div>
                         <span class="font-semibold whitespace-nowrap" style="color: #0A2E23;">Rs {{ number_format($line->line_total) }}</span>
                     </div>
@@ -103,61 +108,69 @@
             </button>
         </div>
 
-    {{-- Step 2: Payment Method --}}
+    {{-- Step 2: Delivery + Payment Method --}}
     @elseif($step === 2)
         <div class="space-y-6">
             <div class="text-center mb-6">
+                <h2 class="text-xl font-semibold mb-1" style="color: #0A2E23;">Delivery &amp; Payment</h2>
+                <p class="text-sm" style="color: #888;">Pickup or delivery, then how you'd like to pay</p>
+            </div>
+
+            {{-- Pickup vs Delivery --}}
+            <div class="space-y-3">
+                <button wire:click="selectDeliveryMethod('pickup')"
+                    class="glass-card w-full p-4 text-left transition-all duration-200 cursor-pointer {{ $deliveryMethod === 'pickup' ? '!border-gold' : '' }}">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-lg flex items-center justify-center font-bold text-sm" style="background: #0A2E23; color: white;">
+                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75M13.5 6.75h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21"/></svg>
+                        </div>
+                        <div class="flex-1">
+                            <p class="font-semibold" style="color: #0A2E23;">Pickup from our shop</p>
+                            <p class="text-xs" style="color: #22c55e;">Free</p>
+                        </div>
+                        @if($deliveryMethod === 'pickup')
+                            <svg class="w-6 h-6 text-gold" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                        @endif
+                    </div>
+                </button>
+                <button wire:click="selectDeliveryMethod('delivery')"
+                    class="glass-card w-full p-4 text-left transition-all duration-200 cursor-pointer {{ $deliveryMethod === 'delivery' ? '!border-gold' : '' }}">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-lg flex items-center justify-center font-bold text-sm" style="background: #0A2E23; color: white;">
+                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.25h5.379a1.125 1.125 0 01.795.33l2.246 2.245a1.125 1.125 0 01.33.795v4.253m-6.75-4.876v6.75m0 0h-3.75m3.75 0h6"/></svg>
+                        </div>
+                        <div class="flex-1">
+                            <p class="font-semibold" style="color: #0A2E23;">Delivery</p>
+                            <p class="text-xs" style="color: {{ $deliveryCharge > 0 ? '#888' : '#22c55e' }};">
+                                {{ $deliveryCharge > 0 ? 'Rs ' . number_format($deliveryCharge) : 'Free Delivery' }}
+                            </p>
+                        </div>
+                        @if($deliveryMethod === 'delivery')
+                            <svg class="w-6 h-6 text-gold" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                        @endif
+                    </div>
+                </button>
+
+                @if($deliveryMethod === 'delivery')
+                    <div>
+                        <label class="block text-sm font-medium mb-1.5" style="color: #555;">Delivery Address</label>
+                        <textarea wire:model="deliveryAddress" rows="3" placeholder="House/flat, street, area, city"
+                            class="w-full rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-gold/30 transition-colors"
+                            style="background: #F7F2EA; border: 1px solid #E8DFD0; color: #0A2E23;"></textarea>
+                        @error('deliveryAddress')
+                            <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+                @endif
+            </div>
+
+            <div class="text-center mt-2">
                 <h2 class="text-xl font-semibold mb-1" style="color: #0A2E23;">Payment Method</h2>
                 <p class="text-sm" style="color: #888;">Choose how you'd like to pay</p>
             </div>
 
             <div class="space-y-3">
-                {{-- EasyPaisa --}}
-                <button wire:click="selectPaymentMethod('easypaisa')"
-                    class="glass-card w-full p-4 text-left transition-all duration-200 cursor-pointer {{ $paymentMethod === 'easypaisa' ? '!border-gold' : '' }}">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-lg flex items-center justify-center font-bold text-sm" style="background: #3AAF3C; color: white;">EP</div>
-                        <div class="flex-1">
-                            <p class="font-semibold" style="color: #0A2E23;">EasyPaisa</p>
-                            <p class="text-xs" style="color: #888;">Mobile wallet payment</p>
-                        </div>
-                        @if($paymentMethod === 'easypaisa')
-                            <svg class="w-6 h-6 text-gold" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
-                        @endif
-                    </div>
-                </button>
-
-                {{-- JazzCash --}}
-                <button wire:click="selectPaymentMethod('jazzcash')"
-                    class="glass-card w-full p-4 text-left transition-all duration-200 cursor-pointer {{ $paymentMethod === 'jazzcash' ? '!border-gold' : '' }}">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-lg flex items-center justify-center font-bold text-sm" style="background: #E2232A; color: white;">JC</div>
-                        <div class="flex-1">
-                            <p class="font-semibold" style="color: #0A2E23;">JazzCash</p>
-                            <p class="text-xs" style="color: #888;">Mobile wallet payment</p>
-                        </div>
-                        @if($paymentMethod === 'jazzcash')
-                            <svg class="w-6 h-6 text-gold" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
-                        @endif
-                    </div>
-                </button>
-
-                {{-- Raast --}}
-                <button wire:click="selectPaymentMethod('raast')"
-                    class="glass-card w-full p-4 text-left transition-all duration-200 cursor-pointer {{ $paymentMethod === 'raast' ? '!border-gold' : '' }}">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-lg flex items-center justify-center font-bold text-sm" style="background: #1B4D3E; color: white;">R</div>
-                        <div class="flex-1">
-                            <p class="font-semibold" style="color: #0A2E23;">Raast</p>
-                            <p class="text-xs" style="color: #888;">Instant bank transfer via Raast ID</p>
-                        </div>
-                        @if($paymentMethod === 'raast')
-                            <svg class="w-6 h-6 text-gold" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
-                        @endif
-                    </div>
-                </button>
-
-                {{-- Bank Transfer --}}
+                {{-- Bank Transfer (only payment method offered) --}}
                 <button wire:click="selectPaymentMethod('bank_transfer')"
                     class="glass-card w-full p-4 text-left transition-all duration-200 cursor-pointer {{ $paymentMethod === 'bank_transfer' ? '!border-gold' : '' }}">
                     <div class="flex items-center gap-3">
@@ -180,26 +193,21 @@
             {{-- Account Details --}}
             @if($paymentMethod)
                 <div class="glass-card p-5">
+                    @if($deliveryMethod === 'delivery' && $deliveryCharge > 0)
+                        <div class="flex items-center justify-between text-sm mb-1" style="color: #888;">
+                            <span>Items</span>
+                            <span>Rs {{ number_format($order->total_amount, 0) }}</span>
+                        </div>
+                        <div class="flex items-center justify-between text-sm mb-2" style="color: #888;">
+                            <span>Delivery</span>
+                            <span>Rs {{ number_format($deliveryCharge, 0) }}</span>
+                        </div>
+                    @endif
                     <h3 class="font-semibold mb-3" style="color: #0A2E23;">
-                        Send Rs {{ number_format($order->total_amount, 0) }} to:
+                        Send Rs {{ number_format($this->grandTotal(), 0) }} to:
                     </h3>
 
-                    @if($paymentMethod === 'easypaisa')
-                        <div class="space-y-2 text-sm">
-                            <div class="flex justify-between"><span style="color: #888;">Account Name</span><span class="font-medium" style="color: #0A2E23;">{{ $paymentAccounts['easypaisa']['name'] }}</span></div>
-                            <div class="flex justify-between"><span style="color: #888;">Account Number</span><span class="font-medium" style="color: #0A2E23;">{{ $paymentAccounts['easypaisa']['number'] }}</span></div>
-                        </div>
-                    @elseif($paymentMethod === 'jazzcash')
-                        <div class="space-y-2 text-sm">
-                            <div class="flex justify-between"><span style="color: #888;">Account Name</span><span class="font-medium" style="color: #0A2E23;">{{ $paymentAccounts['jazzcash']['name'] }}</span></div>
-                            <div class="flex justify-between"><span style="color: #888;">Account Number</span><span class="font-medium" style="color: #0A2E23;">{{ $paymentAccounts['jazzcash']['number'] }}</span></div>
-                        </div>
-                    @elseif($paymentMethod === 'raast')
-                        <div class="space-y-2 text-sm">
-                            <div class="flex justify-between"><span style="color: #888;">Account Name</span><span class="font-medium" style="color: #0A2E23;">{{ $paymentAccounts['raast']['name'] }}</span></div>
-                            <div class="flex justify-between"><span style="color: #888;">Raast ID</span><span class="font-medium" style="color: #0A2E23;">{{ $paymentAccounts['raast']['id'] }}</span></div>
-                        </div>
-                    @elseif($paymentMethod === 'bank_transfer')
+                    @if($paymentMethod === 'bank_transfer')
                         <div class="space-y-2 text-sm">
                             <div class="flex justify-between"><span style="color: #888;">Bank</span><span class="font-medium" style="color: #0A2E23;">{{ $paymentAccounts['bank_transfer']['bank_name'] }}</span></div>
                             <div class="flex justify-between"><span style="color: #888;">Account Title</span><span class="font-medium" style="color: #0A2E23;">{{ $paymentAccounts['bank_transfer']['account_title'] }}</span></div>
@@ -221,7 +229,8 @@
                         <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/>
                     </svg>
                 </button>
-                <button wire:click="goToStep3" class="btn-gold flex-1 text-base py-3.5" @if(!$paymentMethod) disabled style="opacity: 0.5; cursor: not-allowed;" @endif>
+                @php $canProceed = $paymentMethod && ($deliveryMethod !== 'delivery' || trim($deliveryAddress) !== ''); @endphp
+                <button wire:click="goToStep3" class="btn-gold flex-1 text-base py-3.5" @if(!$canProceed) disabled style="opacity: 0.5; cursor: not-allowed;" @endif>
                     I've Sent Payment
                     <svg class="w-5 h-5 ml-2" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>

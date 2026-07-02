@@ -94,39 +94,6 @@ class PriceCalculator
     }
 
     /**
-     * Apply a per-tola margin proportionally to the given unit and add it to the base price.
-     *
-     * @param float  $basePrice      The base price in the target unit
-     * @param float  $marginPerTola  The margin amount in PKR per tola
-     * @param string $unit           The unit of the base price (tola, gram, 10_gram, etc.)
-     */
-    public function applyMargin(float $basePrice, float $marginPerTola, string $unit): float
-    {
-        $marginForUnit = $this->convertMarginToUnit($marginPerTola, $unit);
-
-        return round($basePrice + $marginForUnit, 2);
-    }
-
-    /**
-     * Convert a per-tola margin to the equivalent margin for a different unit.
-     */
-    private function convertMarginToUnit(float $marginPerTola, string $unit): float
-    {
-        $marginPerGram = $marginPerTola / self::TOLA_IN_GRAMS;
-
-        return match ($unit) {
-            'tola' => $marginPerTola,
-            '10_tola' => $marginPerTola * 10,
-            '10_gram' => $marginPerGram * 10,
-            '5_gram' => $marginPerGram * 5,
-            'gram' => $marginPerGram,
-            'kg' => $marginPerGram * 1000,
-            'ounce' => $marginPerGram * self::TROY_OUNCE_IN_GRAMS,
-            default => $marginPerTola,
-        };
-    }
-
-    /**
      * Given a 24K price per tola, derive prices for all karats.
      *
      * @return array{24k: float, rawa: float, 22k: float, 21k: float, 18k: float}

@@ -17,6 +17,7 @@ class OrderItem extends Model
         'unit',
         'quantity',
         'unit_price',
+        'packaging_charge',
         'line_total',
     ];
 
@@ -25,8 +26,15 @@ class OrderItem extends Model
         return [
             'quantity'   => 'integer',
             'unit_price' => 'decimal:2',
+            'packaging_charge' => 'decimal:2',
             'line_total' => 'decimal:2',
         ];
+    }
+
+    /** Total packaging cost for this line (per-unit charge x quantity). */
+    public function getPackagingTotalAttribute(): float
+    {
+        return (float) $this->packaging_charge * $this->quantity;
     }
 
     public function order(): BelongsTo

@@ -130,6 +130,11 @@
                                             <div class="text-[11px] mt-1" style="color: #6B6B6B;">
                                                 Rs {{ number_format($unit) }} × {{ $item->quantity }}
                                             </div>
+                                            @if($item->packaging_charge > 0)
+                                                <div class="text-[11px]" style="color: #6B6B6B;">
+                                                    + Rs {{ number_format($item->packaging_charge) }} packaging
+                                                </div>
+                                            @endif
                                         @else
                                             <div class="text-sm italic" style="color: #6B6B6B;">
                                                 Contact for quote

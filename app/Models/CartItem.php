@@ -34,12 +34,21 @@ class CartItem extends Model
     }
 
     /**
-     * Line subtotal (quantity × locked unit price). Falls back to product's
-     * fixed_price if the locked price hasn't been captured for some reason.
+     * Per-unit packaging charge, read live from the product (not locked —
+     * it's frozen onto the OrderItem only once the order is actually placed).
+     */
+    public function getPackagingChargeAttribute(): float
+    {
+        return (float) ($this->product?->packaging_charge ?? 0);
+    }
+
+    /**
+     * Line subtotal: (unit price + packaging charge) × quantity. Falls back
+     * to product's fixed_price if the locked price hasn't been captured.
      */
     public function getLineTotalAttribute(): float
     {
         $unit = (float) ($this->locked_unit_price ?? $this->product?->fixed_price ?? 0);
-        return $unit * $this->quantity;
+        return ($unit + $this->packaging_charge) * $this->quantity;
     }
 }

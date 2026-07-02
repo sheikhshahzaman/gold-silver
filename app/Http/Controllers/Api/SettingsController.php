@@ -35,6 +35,7 @@ class SettingsController extends Controller
                     'sat' => Setting::get('hours_sat', ''),
                     'sun' => Setting::get('hours_sun', ''),
                 ],
+                'delivery_charge' => (float) Setting::get('delivery_charge', 0),
             ];
         });
 

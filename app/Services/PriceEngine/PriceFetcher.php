@@ -6,7 +6,6 @@ use App\Models\CurrencyRate;
 use App\Models\MetalPrice;
 use App\Models\PriceMargin;
 use App\Models\ScrapeLog;
-use App\Models\Setting;
 use App\Services\PriceEngine\Sources\ExchangeRateSource;
 use App\Services\PriceEngine\Sources\FawazCurrencySource;
 use App\Services\PriceEngine\Sources\GoldApiSource;
@@ -60,9 +59,9 @@ class PriceFetcher
     {
         $startTime = microtime(true);
 
-        $rateMode = $this->rateMode();
-
-        // Strategy 1: PakGold scraper (direct PKR prices)
+        // Strategy 1: PakGold scraper (direct PKR prices) — still needed for the
+        // international spot (USD/oz), currency rates, platinum/palladium, crude
+        // oil and PSX. Local gold/silver PKR prices are always admin-set below.
         $result = $this->tryPakGold();
 
         // Strategy 2: GoldApi + ExchangeRate
@@ -76,38 +75,17 @@ class PriceFetcher
         }
 
         if ($result === null) {
-            // Manual mode doesn't need a live source for gold/silver (they're
-            // admin-set), so fall back to the last spot/currency data in the DB
-            // and keep publishing. Only hard-fail when we're in live mode.
-            if ($rateMode !== 'manual') {
-                Log::error('PriceFetcher: All price sources failed');
-                return false;
-            }
+            // Local gold/silver are always admin-set, so a scraper outage never
+            // blocks publishing them — fall back to the last known spot/currency
+            // data in the DB and keep going.
             $result = $this->databaseFallbackResult();
         }
 
         try {
-            // Load margins from DB
-            $margins = $this->loadMargins();
-
-            if ($rateMode === 'manual') {
-                // Gold: push the admin's per-karat per-tola rates through the same
-                // "direct price" path the scraper uses, so unit derivation and
-                // margins behave identically.
-                $result['gold_pkr_direct'] = true;
-                $result['gold_prices'] = $this->manualGoldDirectPrices();
-
-                $goldCacheData = $this->processGoldPrices($result, $margins);
-
-                // Silver: admin sets each unit's base directly (no tola derivation).
-                $silverCacheData = $this->processSilverPrices($result, $margins, $this->manualSilverPerUnit());
-            } else {
-                // Calculate and store gold prices
-                $goldCacheData = $this->processGoldPrices($result, $margins);
-
-                // Calculate and store silver prices
-                $silverCacheData = $this->processSilverPrices($result, $margins);
-            }
+            // Gold & silver local PKR prices are always the admin's direct entry
+            // from the Gold & Silver Prices page — no live market, no margin math.
+            $goldCacheData = $this->processGoldPrices($this->manualGoldDirectPrices());
+            $silverCacheData = $this->processSilverPrices($this->manualSilverDirectPrices());
 
             // Store currency rates
             $currencyCacheData = $this->storeCurrencyRates($result);
@@ -285,68 +263,38 @@ class PriceFetcher
     }
 
     /**
-     * Process and store gold prices for all karats and units.
+     * Process and store gold prices for all karats and units, straight from the
+     * admin's direct per-karat buy/sell entry (Gold & Silver Prices page) — no
+     * margin math. Per-gram/10-gram/etc are derived from the per-tola value.
      */
-    private function processGoldPrices(array $result, array $margins): array
+    private function processGoldPrices(array $directPrices): array
     {
         $now = now();
         $cacheData = [];
 
-        // 24K-per-tola anchor for any karat the upstream source doesn't quote directly (e.g. 18K).
-        $gold24kPerTola = null;
-
-        if (!empty($result['gold_pkr_direct']) && !empty($result['gold_prices'])) {
-            $gold24kPerTola = $result['gold_prices']['24k']['buy_per_tola']
-                ?? $result['gold_prices']['24k']['sell_per_tola']
-                ?? null;
-        }
-
-        if ($gold24kPerTola === null) {
-            if (!isset($result['xau_usd']) || !isset($result['usd_pkr'])) {
-                return $cacheData;
-            }
-
-            $gold24kPerTola = $this->calculator->ounceToPkrPerTola(
-                $result['xau_usd'],
-                $result['usd_pkr']
-            );
-        }
-
-        $derivedKaratPrices = $this->calculator->deriveAllKaratPrices($gold24kPerTola);
-        $directPrices = $result['gold_prices'] ?? [];
-
         foreach (self::GOLD_KARATS as $karat) {
-            // Prefer the source's direct per-karat buy/sell. Pakistan's bullion market quotes
-            // 22K/21K/Rawa with local spreads that are not a clean purity-ratio of 24K, so
-            // math-deriving them produces prices several thousand PKR off the actual board rate.
-            $directBuy = (float) ($directPrices[$karat]['buy_per_tola'] ?? 0);
-            $directSell = (float) ($directPrices[$karat]['sell_per_tola'] ?? 0);
+            $buyPerTola = (float) ($directPrices[$karat]['buy_per_tola'] ?? 0);
+            $sellPerTola = (float) ($directPrices[$karat]['sell_per_tola'] ?? 0);
 
-            if ($directBuy > 0) {
-                $buyPerTola = $directBuy;
-                $sellPerTola = $directSell > 0 ? $directSell : $directBuy;
-            } else {
-                $buyPerTola = $derivedKaratPrices[$karat];
-                $sellPerTola = $derivedKaratPrices[$karat];
+            // Nothing entered for this karat yet — skip rather than publish Rs 0.
+            if ($buyPerTola <= 0) {
+                continue;
             }
-
-            $buyMargin = $margins['gold'][$karat]['buy_margin'] ?? 0;
-            $sellMargin = $margins['gold'][$karat]['sell_margin'] ?? 0;
+            if ($sellPerTola <= 0) {
+                $sellPerTola = $buyPerTola;
+            }
 
             $buyUnitPrices = $this->calculator->deriveAllUnitPrices($buyPerTola);
             $sellUnitPrices = $this->calculator->deriveAllUnitPrices($sellPerTola);
 
             foreach (self::GOLD_UNITS as $unit) {
-                $buyBase = $buyUnitPrices[$unit];
-                $sellBase = $sellUnitPrices[$unit];
-
-                $buyPrice = $this->calculator->applyMargin($buyBase, $buyMargin, $unit);
-                $sellPrice = $this->calculator->applyMargin($sellBase, $sellMargin, $unit);
+                $buyPrice = $buyUnitPrices[$unit];
+                $sellPrice = $sellUnitPrices[$unit];
 
                 $cacheData[$karat][$unit] = [
                     'buy' => $buyPrice,
                     'sell' => $sellPrice,
-                    'base' => $buyBase,
+                    'base' => $buyPrice,
                 ];
 
                 MetalPrice::updateOrCreate(
@@ -361,7 +309,7 @@ class PriceFetcher
                         'buy_price' => $buyPrice,
                         'sell_price' => $sellPrice,
                         'currency' => 'PKR',
-                        'source' => $result['source'],
+                        'source' => 'manual',
                     ],
                 );
             }
@@ -371,80 +319,30 @@ class PriceFetcher
     }
 
     /**
-     * Process and store silver prices for all units.
-     *
-     * @param array|null $manualUnitBase When provided (manual mode), each unit's
-     *                                   base price is taken directly from this map
-     *                                   instead of being derived from a per-tola rate.
+     * Process and store silver prices for all units, straight from the admin's
+     * direct per-unit buy/sell entry (Gold & Silver Prices page) — no margin math.
      */
-    private function processSilverPrices(array $result, array $margins, ?array $manualUnitBase = null): array
+    private function processSilverPrices(array $directPrices): array
     {
         $now = now();
         $cacheData = [];
 
-        // Silver margins are configured per unit (1 KG, 10 Tola, 1 Tola, 10 Gram,
-        // 5 Gram, 1 Gram). Each row's value is added directly to that unit's price.
-        $silverMarginsByUnit = $margins['silver_by_unit'] ?? [];
-
-        if ($manualUnitBase !== null) {
-            // Manual mode: admin-set base price for each unit, used as-is.
-            $unitPrices = $manualUnitBase;
-            $sellUnitPrices = $manualUnitBase;
-        } else {
-            $silverPerTola = null;
-
-            if (!empty($result['silver_pkr_direct']) && !empty($result['silver_prices'])) {
-                // Silver from PakGold now has 'reti' and 'pees' sub-keys
-                $silverPerTola = $result['silver_prices']['reti']['buy_per_tola']
-                    ?? $result['silver_prices']['pees']['buy_per_tola']
-                    ?? null;
-            }
-
-            if ($silverPerTola === null && isset($result['xag_usd']) && isset($result['usd_pkr'])) {
-                $silverPerTola = $this->calculator->ounceToPkrPerTola(
-                    $result['xag_usd'],
-                    $result['usd_pkr']
-                );
-            }
-
-            if ($silverPerTola === null || $silverPerTola <= 0) {
-                return $cacheData;
-            }
-
-            // Derive base buy/sell unit prices (no margin yet).
-            $unitPrices = $this->calculator->deriveAllUnitPrices($silverPerTola);
-
-            $silverSellPerTola = null;
-            if (!empty($result['silver_pkr_direct']) && !empty($result['silver_prices'])) {
-                $silverSellPerTola = $result['silver_prices']['reti']['sell_per_tola']
-                    ?? $result['silver_prices']['pees']['sell_per_tola']
-                    ?? null;
-            }
-            $sellUnitPrices = $silverSellPerTola
-                ? $this->calculator->deriveAllUnitPrices($silverSellPerTola)
-                : $unitPrices;
-        }
-
         foreach (self::SILVER_UNITS as $unit) {
-            $basePrice = (float) ($unitPrices[$unit] ?? 0);
-            $baseSellPrice = (float) ($sellUnitPrices[$unit] ?? $basePrice);
+            $buyPrice = (float) ($directPrices[$unit]['buy'] ?? 0);
+            $sellPrice = (float) ($directPrices[$unit]['sell'] ?? 0);
 
-            // Skip units without a usable base price (e.g. unset manual value).
-            if ($basePrice <= 0) {
+            // Nothing entered for this unit yet — skip rather than publish Rs 0.
+            if ($buyPrice <= 0) {
                 continue;
             }
-
-            // Per-unit margin, applied directly to that unit's price.
-            $buyMarginForUnit  = $silverMarginsByUnit[$unit]['buy_margin']  ?? 0;
-            $sellMarginForUnit = $silverMarginsByUnit[$unit]['sell_margin'] ?? 0;
-
-            $buyPrice  = round($basePrice + $buyMarginForUnit, 2);
-            $sellPrice = round($baseSellPrice + $sellMarginForUnit, 2);
+            if ($sellPrice <= 0) {
+                $sellPrice = $buyPrice;
+            }
 
             $cacheData[$unit] = [
                 'buy' => $buyPrice,
                 'sell' => $sellPrice,
-                'base' => $basePrice,
+                'base' => $buyPrice,
             ];
 
             MetalPrice::updateOrCreate(
@@ -459,7 +357,7 @@ class PriceFetcher
                     'buy_price' => $buyPrice,
                     'sell_price' => $sellPrice,
                     'currency' => 'PKR',
-                    'source' => $result['source'],
+                    'source' => 'manual',
                 ],
             );
         }
@@ -520,65 +418,49 @@ class PriceFetcher
     }
 
     /**
-     * Load price margins from the database, organized by metal and karat.
-     *
-     * @return array{gold: array, silver: array}
-     */
-    private function loadMargins(): array
-    {
-        // Gold margins are keyed by karat (one row covers all units via per-tola conversion).
-        // Silver margins are keyed by unit (one row per weight category: tola, kg, 10_gram, ...).
-        $margins = ['gold' => [], 'silver_by_unit' => []];
-
-        foreach (PriceMargin::all() as $record) {
-            if ($record->metal === 'gold') {
-                $margins['gold'][strtolower($record->karat ?? '')] = [
-                    'buy_margin' => (float) $record->buy_margin,
-                    'sell_margin' => (float) $record->sell_margin,
-                ];
-            } elseif ($record->metal === 'silver') {
-                $margins['silver_by_unit'][$record->unit ?? ''] = [
-                    'buy_margin' => (float) $record->buy_margin,
-                    'sell_margin' => (float) $record->sell_margin,
-                ];
-            }
-        }
-
-        return $margins;
-    }
-
-    /**
-     * Where local gold/silver rates come from: 'manual' (admin-set) or 'live' (market).
-     * Defaults to 'manual'. Spot USD/oz is always live regardless.
+     * Where local gold/silver rates come from. Always 'manual' now — the admin
+     * types final buy/sell prices directly on the Gold & Silver Prices page.
+     * Spot USD/oz is always live regardless. Kept for the /api/prices response.
      */
     private function rateMode(): string
     {
-        return Setting::get('rate_mode', 'manual') === 'live' ? 'live' : 'manual';
+        return 'manual';
     }
 
     /**
      * Build the gold "direct price" array (per-karat, buy/sell per tola) from the
-     * admin's manual rates. A karat left blank is derived from 24K by purity, so
-     * the admin can set just 24K if they prefer.
+     * admin's Gold & Silver Prices page. A karat left blank (or zeroed) is
+     * derived from 24K by purity, so the admin can set just 24K if they prefer.
      *
      * @return array<string, array{buy_per_tola: float, sell_per_tola: float}>
      */
     private function manualGoldDirectPrices(): array
     {
-        $base24k = (float) Setting::get('manual_gold_24k', 0);
+        $rows = PriceMargin::where('metal', 'gold')->get()
+            ->keyBy(fn ($r) => strtolower($r->karat ?? ''));
+
+        $base24k = $rows->get('24k');
+        $base24kBuy = (float) ($base24k?->manual_buy_price ?? 0);
+        $base24kSell = (float) ($base24k?->manual_sell_price ?? 0);
+
         $prices = [];
 
         foreach (self::GOLD_KARATS as $karat) {
-            $perTola = (float) Setting::get('manual_gold_' . $karat, 0);
+            $row = $rows->get($karat);
+            $buyPerTola = (float) ($row?->manual_buy_price ?? 0);
+            $sellPerTola = (float) ($row?->manual_sell_price ?? 0);
 
-            if ($perTola <= 0 && $base24k > 0) {
-                $perTola = $this->calculator->applyKaratPurity($base24k, $karat);
+            if ($buyPerTola <= 0 && $base24kBuy > 0) {
+                $buyPerTola = $this->calculator->applyKaratPurity($base24kBuy, $karat);
+            }
+            if ($sellPerTola <= 0 && $base24kSell > 0) {
+                $sellPerTola = $this->calculator->applyKaratPurity($base24kSell, $karat);
             }
 
-            if ($perTola > 0) {
+            if ($buyPerTola > 0 || $sellPerTola > 0) {
                 $prices[$karat] = [
-                    'buy_per_tola' => $perTola,
-                    'sell_per_tola' => $perTola,
+                    'buy_per_tola' => $buyPerTola,
+                    'sell_per_tola' => $sellPerTola,
                 ];
             }
         }
@@ -587,25 +469,36 @@ class PriceFetcher
     }
 
     /**
-     * Admin-set silver base price per unit. A unit left blank is derived from the
-     * 1-tola rate, so the admin can set just tola if they prefer.
+     * Admin-set silver buy/sell price per unit, from the Gold & Silver Prices
+     * page. A unit left blank (or zeroed) is derived from the 1-tola rate, so
+     * the admin can set just tola if they prefer.
      *
-     * @return array<string, float>
+     * @return array<string, array{buy: float, sell: float}>
      */
-    private function manualSilverPerUnit(): array
+    private function manualSilverDirectPrices(): array
     {
-        $baseTola = (float) Setting::get('manual_silver_tola', 0);
-        $derived = $baseTola > 0 ? $this->calculator->deriveAllUnitPrices($baseTola) : [];
+        $rows = PriceMargin::where('metal', 'silver')->get()->keyBy('unit');
+
+        $tolaRow = $rows->get('tola');
+        $tolaBuy = (float) ($tolaRow?->manual_buy_price ?? 0);
+        $tolaSell = (float) ($tolaRow?->manual_sell_price ?? 0);
+        $derivedBuy = $tolaBuy > 0 ? $this->calculator->deriveAllUnitPrices($tolaBuy) : [];
+        $derivedSell = $tolaSell > 0 ? $this->calculator->deriveAllUnitPrices($tolaSell) : [];
 
         $out = [];
         foreach (self::SILVER_UNITS as $unit) {
-            $value = (float) Setting::get('manual_silver_' . $unit, 0);
+            $row = $rows->get($unit);
+            $buy = (float) ($row?->manual_buy_price ?? 0);
+            $sell = (float) ($row?->manual_sell_price ?? 0);
 
-            if ($value <= 0) {
-                $value = (float) ($derived[$unit] ?? 0);
+            if ($buy <= 0) {
+                $buy = (float) ($derivedBuy[$unit] ?? 0);
+            }
+            if ($sell <= 0) {
+                $sell = (float) ($derivedSell[$unit] ?? 0);
             }
 
-            $out[$unit] = $value;
+            $out[$unit] = ['buy' => $buy, 'sell' => $sell];
         }
 
         return $out;

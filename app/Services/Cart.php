@@ -69,7 +69,10 @@ class Cart
 
         return CartItem::create([
             'session_id' => Auth::check() ? null : $this->sessionId(),
-            'user_id' => Auth::id(),
+            // Auth::id() can return a stale id from the session even when the
+            // user row was deleted (Auth::check() false) — that would fail the
+            // user_id foreign key, so only trust it for a verified login.
+            'user_id' => Auth::check() ? Auth::id() : null,
             'product_id' => $product->id,
             'quantity' => $quantity,
             'locked_unit_price' => $unit,

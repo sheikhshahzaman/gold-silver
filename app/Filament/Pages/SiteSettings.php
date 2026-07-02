@@ -47,6 +47,7 @@ class SiteSettings extends Page implements HasForms
             'silver_note_active' => Setting::get('silver_note_active', '0') === '1',
             'silver_note_en' => Setting::get('silver_note_en', ''),
             'silver_note_ur' => Setting::get('silver_note_ur', ''),
+            'delivery_charge' => (float) Setting::get('delivery_charge', 0),
         ]);
     }
 
@@ -88,6 +89,16 @@ class SiteSettings extends Page implements HasForms
                             ->maxValue(5)
                             ->step(0.01)
                             ->suffix('%'),
+                    ]),
+                Section::make('Delivery')
+                    ->description('One flat delivery charge applied to every order that chooses delivery. Pickup is always free. Set this to 0 to offer free delivery — customers will see a "Free Delivery" message instead of a charge.')
+                    ->schema([
+                        TextInput::make('delivery_charge')
+                            ->label('Delivery Charge')
+                            ->helperText('Shown to the customer when they choose delivery at checkout. 0 = free delivery.')
+                            ->numeric()
+                            ->minValue(0)
+                            ->prefix('Rs'),
                     ]),
                 Section::make('Silver Note (mobile app)')
                     ->description('Optional note shown under the silver table in the app. Turn it on and add text to display it; leave it off to hide it.')
@@ -185,6 +196,11 @@ class SiteSettings extends Page implements HasForms
             Setting::set('silver_note_ur', (string) ($data['silver_note_ur'] ?? ''));
         }
         Cache::forget('api.silver_note');
+
+        if (array_key_exists('delivery_charge', $data)) {
+            Setting::set('delivery_charge', (float) ($data['delivery_charge'] ?? 0));
+            Cache::forget('setting.delivery_charge');
+        }
 
         Notification::make()
             ->title('Site settings saved successfully.')

@@ -41,6 +41,7 @@ class CatalogController extends Controller
             ] : null,
             'price_type' => $p->price_type,
             'current_price' => $cart->unitPriceFor($p),
+            'packaging_charge' => (float) $p->packaging_charge,
             'discount_label' => $p->discount_label,
             'stock_count' => $p->stock_count,
         ]);

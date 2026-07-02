@@ -28,6 +28,9 @@ class Order extends Model
         'type',
         'locked_price',
         'total_amount',
+        'delivery_method',
+        'delivery_address',
+        'delivery_charge',
         'status',
     ];
 
@@ -42,7 +45,17 @@ class Order extends Model
             'quantity' => 'decimal:4',
             'locked_price' => 'decimal:2',
             'total_amount' => 'decimal:2',
+            'delivery_charge' => 'decimal:2',
         ];
+    }
+
+    /**
+     * Product/metal total plus delivery charge (0 for pickup). This is the
+     * actual amount the customer pays and what the Payment row records.
+     */
+    public function getGrandTotalAttribute(): float
+    {
+        return (float) $this->total_amount + (float) $this->delivery_charge;
     }
 
     /**

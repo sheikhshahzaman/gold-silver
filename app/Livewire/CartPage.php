@@ -65,7 +65,10 @@ class CartPage extends Component
 
         $order = DB::transaction(function () use ($items, $subtotal) {
             $order = Order::create([
-                'user_id' => auth()->id(),
+                // Guard against a stale session id for a deleted user —
+                // auth()->id() can be non-null while auth()->check() is false,
+                // which would fail the orders.user_id foreign key.
+                'user_id' => auth()->check() ? auth()->id() : null,
                 'type' => 'buy',
                 'total_amount' => $subtotal,
                 'status' => 'pending',
@@ -76,6 +79,7 @@ class CartPage extends Component
             foreach ($items as $item) {
                 $product = $item->product;
                 $unit = (float) ($item->locked_unit_price ?? 0);
+                $packaging = (float) ($product?->packaging_charge ?? 0);
                 OrderItem::create([
                     'order_id' => $order->id,
                     'product_id' => $product?->id,
@@ -86,7 +90,8 @@ class CartPage extends Component
                     'unit' => $product?->unit ?? null,
                     'quantity' => $item->quantity,
                     'unit_price' => $unit,
-                    'line_total' => $unit * $item->quantity,
+                    'packaging_charge' => $packaging,
+                    'line_total' => ($unit + $packaging) * $item->quantity,
                 ]);
             }
 
