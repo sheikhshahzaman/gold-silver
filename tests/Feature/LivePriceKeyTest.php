@@ -107,4 +107,20 @@ class LivePriceKeyTest extends TestCase
         $this->assertNull($cart->unitPriceFor($this->makeLiveProduct('1-gram-gold-bar-ary-verified')));
         $this->assertNull($cart->unitPriceFor($this->makeLiveProduct('gold.24k.bogus_unit')));
     }
+
+    public function test_checkout_refuses_unpriced_cart_lines(): void
+    {
+        $this->seedPriceCache();
+        $product = $this->makeLiveProduct('gold.24k.bogus_unit');
+        // Stale leftover fixed_price must NOT leak into totals for live products.
+        $product->update(['fixed_price' => 400000]);
+
+        app(Cart::class)->add($product, 1);
+
+        \Livewire\Livewire::test(\App\Livewire\CartPage::class)
+            ->call('checkout')
+            ->assertHasErrors('checkout');
+
+        $this->assertSame(0, \App\Models\Order::count());
+    }
 }

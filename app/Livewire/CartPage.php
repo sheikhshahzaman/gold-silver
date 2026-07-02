@@ -61,6 +61,17 @@ class CartPage extends Component
             return null;
         }
 
+        // Refuse to place an order containing a line the price engine could
+        // not price (e.g. a misconfigured price key) — a Rs 0 line would
+        // otherwise be locked onto the order.
+        $unpriced = $items->first(fn ($i) => (float) ($i->locked_unit_price ?? 0) <= 0);
+        if ($unpriced) {
+            $this->addError('checkout', 'Pricing is temporarily unavailable for "'
+                . ($unpriced->product?->name ?? 'an item')
+                . '" — please remove it from the cart or try again in a moment.');
+            return null;
+        }
+
         $subtotal = $cart->subtotal();
 
         $order = DB::transaction(function () use ($items, $subtotal) {

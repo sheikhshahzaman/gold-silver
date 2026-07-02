@@ -43,12 +43,14 @@ class CartItem extends Model
     }
 
     /**
-     * Line subtotal: (unit price + packaging charge) × quantity. Falls back
-     * to product's fixed_price if the locked price hasn't been captured.
+     * Line subtotal: (unit price + packaging charge) × quantity. No silent
+     * fixed_price fallback: on a live product fixed_price is stale leftover
+     * data, and the checkout writes locked_unit_price onto the order — a
+     * fallback here would make the order total disagree with its own lines.
      */
     public function getLineTotalAttribute(): float
     {
-        $unit = (float) ($this->locked_unit_price ?? $this->product?->fixed_price ?? 0);
+        $unit = (float) ($this->locked_unit_price ?? 0);
         return ($unit + $this->packaging_charge) * $this->quantity;
     }
 }

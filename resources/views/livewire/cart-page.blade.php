@@ -182,6 +182,10 @@
                             <p class="text-[11px] mt-1" style="color: #6B6B6B;">Tax &amp; delivery confirmed at checkout</p>
                         </div>
 
+                        @error('checkout')
+                            <p class="text-xs mt-4 px-3 py-2 rounded-lg" style="background: #FDECEA; color: #B3261E;">{{ $message }}</p>
+                        @enderror
+
                         <button wire:click="checkout"
                                 wire:loading.attr="disabled"
                                 wire:target="checkout"
