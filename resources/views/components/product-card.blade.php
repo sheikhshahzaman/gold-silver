@@ -21,17 +21,11 @@
     $phIcon = $placeholderIcons[$phKey] ?? $placeholderIcons['bars'];
     $prodBg = $prod->metal === 'silver' ? 'linear-gradient(140deg,#F2F2F2,#D5D5D5 60%,#C2C2C2)' : 'linear-gradient(140deg,#FBF0D0,#F5E08B 60%,#EBCB66)';
 
-    $livePrice = null; $liveSell = null;
-    if ($prod->price_type === 'live' && $prod->price_key) {
-        $parts = explode('.', $prod->price_key);
-        if (count($parts) === 3) {
-            $livePrice = $goldPrices[$parts[1]][$parts[2]]['buy'] ?? null;
-            $liveSell = $goldPrices[$parts[1]][$parts[2]]['sell'] ?? null;
-        } elseif (count($parts) === 2 && $parts[0] === 'silver') {
-            $livePrice = $silverPrices[$parts[1]]['buy'] ?? null;
-            $liveSell = $silverPrices[$parts[1]]['sell'] ?? null;
-        }
-    }
+    {{-- Central resolver: exact board rows or tola-derived weights (ounce,
+         2.5g, half tola...) — keep in sync with Cart::unitQuoteFor. --}}
+    $liveQuote = app(\App\Services\Cart::class)->unitQuoteFor($prod);
+    $livePrice = $liveQuote['buy'] ?? null;
+    $liveSell = $liveQuote['sell'] ?? null;
 
     $showPrice = $prod->productCategory?->show_live_price ?? false;
     if (!$showPrice || $prod->price_type === 'custom_quote') {
@@ -96,7 +90,9 @@
                     <div class="text-base font-bold tabular-nums" style="color: #E53935;">Rs {{ number_format($prod->applyDiscount($livePrice)) }}</div>
                 @else
                     <div class="text-base font-bold tabular-nums" style="color: #0D3D1F;">Rs {{ number_format($livePrice) }}</div>
-                    <div class="text-[11px] tabular-nums" style="color: #8A8270;">Sell: Rs {{ number_format($liveSell) }}</div>
+                    @if($liveSell)
+                        <div class="text-[11px] tabular-nums" style="color: #8A8270;">Sell: Rs {{ number_format($liveSell) }}</div>
+                    @endif
                 @endif
             @else
                 <div class="text-sm font-semibold" style="color: #0D3D1F;">Contact for price</div>

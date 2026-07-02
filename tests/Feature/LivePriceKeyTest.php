@@ -14,6 +14,12 @@ class LivePriceKeyTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        Cart::forgetPriceMatrixMemo();
+    }
+
     /** Board: gold 24k tola 445600, gram row present; silver tola 7960, kg row present. */
     private function seedPriceCache(): void
     {
@@ -77,6 +83,20 @@ class LivePriceKeyTest extends TestCase
         $silverPerGram = 7960 / Cart::GRAMS_PER_TOLA;
         $this->assertEquals(round($silverPerGram * 58.319019, 2), $cart->unitPriceFor($this->makeLiveProduct('silver.5_tola')));
         $this->assertEquals(round(7960 * 10, 2), $cart->unitPriceFor($this->makeLiveProduct('silver.10_tola')));
+    }
+
+    public function test_quote_returns_buy_and_sell_for_derived_units(): void
+    {
+        $this->seedPriceCache();
+        $cart = app(Cart::class);
+
+        $quote = $cart->unitQuoteFor($this->makeLiveProduct('gold.24k.ounce'));
+        $this->assertEquals(round(445600 / Cart::GRAMS_PER_TOLA * 31.1034768, 2), $quote['buy']);
+        $this->assertEquals(round(446500 / Cart::GRAMS_PER_TOLA * 31.1034768, 2), $quote['sell']);
+
+        $exact = $cart->unitQuoteFor($this->makeLiveProduct('silver.tola'));
+        $this->assertEquals(7960.0, $exact['buy']);
+        $this->assertEquals(8860.0, $exact['sell']);
     }
 
     public function test_unknown_or_slug_keys_return_null(): void

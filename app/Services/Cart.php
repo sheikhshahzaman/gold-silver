@@ -32,46 +32,80 @@ class Cart
         }
 
         if ($product->price_type === 'live' && $product->price_key) {
-            $prices = app(PriceCacheManager::class)->getAllPrices();
-            $key = $product->price_key;
-            $bucket = null;
-            $unit = null;
-
-            // silver.<unit> — the unit token may itself contain dots (2.5_gram)
-            if (str_starts_with($key, 'silver.')) {
-                $bucket = $prices['silver'] ?? [];
-                $unit = substr($key, strlen('silver.'));
-            } elseif (str_starts_with($key, 'gold.')) {
-                // gold.<karat>.<unit>
-                $parts = explode('.', $key, 3);
-                if (count($parts) === 3) {
-                    $bucket = $prices['gold'][$parts[1]] ?? [];
-                    $unit = $parts[2];
-                }
-            }
-
-            $base = null;
-            if ($bucket !== null && $unit !== null) {
-                // Exact board row first (silver units are priced independently).
-                $base = $bucket[$unit]['buy'] ?? null;
-
-                // No exact row: derive from the tola rate by weight so any
-                // catalog weight (2.5g, 50g, ounce, half tola...) gets a price.
-                if ($base === null) {
-                    $grams = self::UNIT_GRAMS[$unit] ?? null;
-                    $tola = $bucket['tola']['buy'] ?? null;
-                    if ($grams !== null && $tola !== null) {
-                        $base = round($tola / self::GRAMS_PER_TOLA * $grams, 2);
-                    }
-                }
-            }
-
+            $base = $this->unitQuoteFor($product)['buy'] ?? null;
             if ($base !== null) {
                 return $product->hasActiveDiscount() ? (float) $product->applyDiscount($base) : (float) $base;
             }
         }
 
         return null;
+    }
+
+    /**
+     * Resolve a live product's price key to ['buy' => x, 'sell' => y].
+     * Exact board rows win (silver units are priced independently); any
+     * other weight (2.5g, 50g, ounce, half tola...) derives from the
+     * tola rate by gram weight. Null when the key can't be resolved.
+     */
+    public function unitQuoteFor(Product $product): ?array
+    {
+        if ($product->price_type !== 'live' || !$product->price_key) {
+            return null;
+        }
+
+        $prices = $this->priceMatrix();
+        $key = $product->price_key;
+        $bucket = null;
+        $unit = null;
+
+        // silver.<unit> — the unit token may itself contain dots (2.5_gram)
+        if (str_starts_with($key, 'silver.')) {
+            $bucket = $prices['silver'] ?? [];
+            $unit = substr($key, strlen('silver.'));
+        } elseif (str_starts_with($key, 'gold.')) {
+            // gold.<karat>.<unit>
+            $parts = explode('.', $key, 3);
+            if (count($parts) === 3) {
+                $bucket = $prices['gold'][$parts[1]] ?? [];
+                $unit = $parts[2];
+            }
+        }
+
+        if ($bucket === null || $unit === null) {
+            return null;
+        }
+
+        if (isset($bucket[$unit]['buy'])) {
+            return [
+                'buy' => (float) $bucket[$unit]['buy'],
+                'sell' => isset($bucket[$unit]['sell']) ? (float) $bucket[$unit]['sell'] : null,
+            ];
+        }
+
+        $grams = self::UNIT_GRAMS[$unit] ?? null;
+        $tola = $bucket['tola'] ?? null;
+        if ($grams === null || !isset($tola['buy'])) {
+            return null;
+        }
+
+        return [
+            'buy' => round($tola['buy'] / self::GRAMS_PER_TOLA * $grams, 2),
+            'sell' => isset($tola['sell']) ? round($tola['sell'] / self::GRAMS_PER_TOLA * $grams, 2) : null,
+        ];
+    }
+
+    /** One price-matrix read per request, shared across every card render. */
+    private static ?array $priceMatrixMemo = null;
+
+    private function priceMatrix(): array
+    {
+        return self::$priceMatrixMemo ??= app(PriceCacheManager::class)->getAllPrices();
+    }
+
+    /** @internal test hook — clears the per-request memo */
+    public static function forgetPriceMatrixMemo(): void
+    {
+        self::$priceMatrixMemo = null;
     }
 
     public const GRAMS_PER_TOLA = 11.6638038;
