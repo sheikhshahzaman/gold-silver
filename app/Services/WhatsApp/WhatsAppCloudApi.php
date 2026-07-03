@@ -32,31 +32,18 @@ class WhatsAppCloudApi
             return false;
         }
 
-        $phoneNumberId = Setting::get('whatsapp_phone_number_id');
-        $token = Setting::get('whatsapp_api_token');
-        $template = Setting::get('whatsapp_template_name');
         $digits = preg_replace('/[^0-9]/', '', $toNumber);
 
         try {
-            $response = Http::withToken($token)
-                ->timeout(10)
-                ->post("https://graph.facebook.com/v20.0/{$phoneNumberId}/messages", [
-                    'messaging_product' => 'whatsapp',
-                    'to' => $digits,
-                    'type' => 'template',
-                    'template' => [
-                        'name' => $template,
-                        'language' => ['code' => 'en_US'],
-                        'components' => [
-                            [
-                                'type' => 'body',
-                                'parameters' => [
-                                    ['type' => 'text', 'text' => $code],
-                                ],
-                            ],
-                        ],
-                    ],
-                ]);
+            // Meta "Authentication" templates carry a copy-code button and
+            // require the code as BOTH the body and the button parameter.
+            $response = $this->postTemplate($digits, $code, withOtpButton: true);
+
+            // A plain utility-style template has no button — a parameter
+            // mismatch (#132000) comes back as a 4xx; retry body-only.
+            if ($response->failed()) {
+                $response = $this->postTemplate($digits, $code, withOtpButton: false);
+            }
 
             if ($response->failed()) {
                 Log::warning('WhatsApp Cloud API: failed to send 2FA code', [
@@ -77,6 +64,46 @@ class WhatsAppCloudApi
 
             return false;
         }
+    }
+
+    private function postTemplate(string $digits, string $code, bool $withOtpButton): \Illuminate\Http\Client\Response
+    {
+        $phoneNumberId = Setting::get('whatsapp_phone_number_id');
+        $token = Setting::get('whatsapp_api_token');
+        $template = Setting::get('whatsapp_template_name');
+
+        $components = [
+            [
+                'type' => 'body',
+                'parameters' => [
+                    ['type' => 'text', 'text' => $code],
+                ],
+            ],
+        ];
+
+        if ($withOtpButton) {
+            $components[] = [
+                'type' => 'button',
+                'sub_type' => 'url',
+                'index' => '0',
+                'parameters' => [
+                    ['type' => 'text', 'text' => $code],
+                ],
+            ];
+        }
+
+        return Http::withToken($token)
+            ->timeout(10)
+            ->post("https://graph.facebook.com/v20.0/{$phoneNumberId}/messages", [
+                'messaging_product' => 'whatsapp',
+                'to' => $digits,
+                'type' => 'template',
+                'template' => [
+                    'name' => $template,
+                    'language' => ['code' => 'en_US'],
+                    'components' => $components,
+                ],
+            ]);
     }
 
     /**
