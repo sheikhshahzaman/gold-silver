@@ -19,23 +19,33 @@ class VerifyController extends Controller
     public function verify(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'serial' => 'required_without:token|string|min:5|max:80',
-            'token' => 'required_without:serial|string|min:5|max:120',
+            'serial' => 'required_without:token|string|min:5|max:200',
+            'token' => 'required_without:serial|string|min:5|max:200',
             'customer_name' => 'nullable|string|max:100',
             'customer_phone' => 'nullable|string|max:30',
         ]);
 
-        // QR stickers encode /v/{verification_token}; manual entry uses the
-        // printed serial number. Support both.
-        if (!empty($data['token'])) {
-            $item = InventoryItem::with('product.productCategory')
-                ->where('verification_token', trim($data['token']))
-                ->first();
-            $normalized = strtoupper(trim($data['serial'] ?? ($item?->serial_number ?? $data['token'])));
-        } else {
-            $normalized = strtoupper(trim($data['serial']));
-            $item = null;
+        // Accept whatever a scan or a human produces, in either field:
+        // the full https://…/verify/{token} (or /v/{token}) URL that QR
+        // stickers encode, a bare verification token, or the printed serial.
+        $raw = trim((string) ($data['serial'] ?? $data['token'] ?? ''));
+
+        $token = null;
+        if (preg_match('#/(?:verify|v)/([A-Za-z0-9]{10,160})/?$#', $raw, $m)) {
+            $token = $m[1];
+        } elseif (!empty($data['token'])) {
+            $token = trim($data['token']);
+        } elseif (preg_match('/^[a-f0-9]{20,160}$/i', $raw)) {
+            $token = $raw; // bare token pasted into the serial box
         }
+
+        $item = $token
+            ? InventoryItem::with('product.productCategory')
+                ->where('verification_token', $token)
+                ->first()
+            : null;
+
+        $normalized = mb_substr(strtoupper($item?->serial_number ?? $raw), 0, 80);
 
         // Stored serials carry the IBE- prefix; accept entries without it too.
         $candidates = array_unique([
