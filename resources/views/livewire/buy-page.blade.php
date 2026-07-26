@@ -248,7 +248,7 @@
                     <div style="background: #FFFFFF; border-radius: 1rem; padding: 1.25rem 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border: 1px solid #E8DFD0;">
                         <label style="font-size: 0.8rem; font-weight: 600; color: #0A2E23; text-transform: uppercase; letter-spacing: 0.06em; display: block; margin-bottom: 0.75rem;">Select Unit</label>
                         <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
-                            @foreach(['tola' => 'Tola', 'gram' => 'Gram', '10_gram' => '10 Gram', 'kg' => 'KG'] as $key => $label)
+                            @foreach($this->unitOptions as $key => $label)
                                 <button wire:click="selectUnit('{{ $key }}')"
                                     style="
                                         padding: 0.5rem 1.15rem; border-radius: 9999px;

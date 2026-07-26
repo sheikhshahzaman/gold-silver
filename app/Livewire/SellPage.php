@@ -35,9 +35,24 @@ class SellPage extends Component
     public int $quantity = 1;
 
     /**
-     * Selected unit: 'tola', 'gram', '10_gram', 'kg'.
+     * Selected unit. Gold uses weight units; silver uses app package units.
      */
     public string $selectedUnit = 'tola';
+
+    private const GOLD_UNIT_OPTIONS = [
+        'tola' => 'Tola',
+        'gram' => 'Gram',
+        '10_gram' => '10 Gram',
+        'kg' => 'KG',
+    ];
+
+    private const SILVER_UNIT_OPTIONS = [
+        '10_tola_qr' => '10 Tola (QR Packaging)',
+        '10_tola' => '10 Tola (999)',
+        'kg' => '1 KG',
+        '5_tola' => '5 Tola (Bar)',
+        'tola' => '1 Tola (Bar)',
+    ];
 
     /**
      * Calculated total price.
@@ -74,6 +89,11 @@ class SellPage extends Component
 
         if ($metal === 'silver') {
             $this->selectedKarat = '24k';
+            if (!array_key_exists($this->selectedUnit, self::SILVER_UNIT_OPTIONS)) {
+                $this->selectedUnit = 'tola';
+            }
+        } elseif (!array_key_exists($this->selectedUnit, self::GOLD_UNIT_OPTIONS)) {
+            $this->selectedUnit = 'tola';
         }
 
         $this->calculatePrice();
@@ -169,6 +189,13 @@ class SellPage extends Component
         }
 
         return $this->silverPrices[$this->selectedUnit]['sell'] ?? null;
+    }
+
+    public function getUnitOptionsProperty(): array
+    {
+        return $this->selectedMetal === 'silver'
+            ? self::SILVER_UNIT_OPTIONS
+            : self::GOLD_UNIT_OPTIONS;
     }
 
     /**

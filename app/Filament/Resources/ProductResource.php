@@ -241,8 +241,16 @@ class ProductResource extends Resource
             $options["Gold {$karatLabel}"] = $group;
         }
 
+        $silverUnitLabels = [
+            '10_tola_qr' => '10 Tola (QR Packaging)',
+            '10_tola' => '10 Tola (999)',
+            'kg' => '1 KG',
+            '5_tola' => '5 Tola (Bar)',
+            'tola' => '1 Tola (Bar)',
+        ];
+
         $silver = [];
-        foreach ($unitLabels as $unitKey => $unitLabel) {
+        foreach ($silverUnitLabels as $unitKey => $unitLabel) {
             $silver["silver.{$unitKey}"] = "Silver — {$unitLabel}";
         }
         $options['Silver'] = $silver;

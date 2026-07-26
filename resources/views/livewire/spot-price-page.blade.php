@@ -195,7 +195,13 @@
                         </thead>
                         <tbody>
                             @php
-                                $silverUnitLabels = ['kg' => '1 KG', '10_tola' => '10 Tola', 'tola' => '1 Tola', '10_gram' => '10 Gram', 'gram' => '1 Gram'];
+                                $silverUnitLabels = [
+                                    '10_tola_qr' => ['title' => '10 Tola', 'subtitle' => '(QR Packaging)'],
+                                    '10_tola' => ['title' => '10 Tola', 'subtitle' => '(999)'],
+                                    'kg' => ['title' => '1 KG', 'subtitle' => null],
+                                    '5_tola' => ['title' => '5 Tola', 'subtitle' => '(Bar)'],
+                                    'tola' => ['title' => '1 Tola', 'subtitle' => '(Bar)'],
+                                ];
                             @endphp
                             @foreach($silverUnitLabels as $unit => $label)
                                 @php
@@ -204,7 +210,10 @@
                                 @endphp
                                 <tr class="border-b transition-colors hover:bg-cream/50" style="border-color: #F0E8DB;" wire:key="silver-{{ $unit }}">
                                     <td class="py-3 sm:py-3.5 px-1.5 sm:px-3">
-                                        <span class="font-bold" style="color: #0A2E23;">{{ $label }}</span>
+                                        <span class="block font-bold" style="color: #0A2E23;">{{ $label['title'] }}</span>
+                                        @if($label['subtitle'])
+                                            <span class="block text-[10px] sm:text-xs" style="color: #8C7B5D;">{{ $label['subtitle'] }}</span>
+                                        @endif
                                     </td>
                                     <td class="text-right py-3 sm:py-3.5 px-1.5 sm:px-3">
                                         @if($buyPrice !== null)

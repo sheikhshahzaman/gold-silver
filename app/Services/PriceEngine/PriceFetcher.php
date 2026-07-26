@@ -25,9 +25,16 @@ class PriceFetcher
     private const GOLD_UNITS = ['tola', '10_gram', '5_gram', 'gram'];
 
     /**
-     * Silver unit types to store.
+     * Silver unit types shown on the admin/app/website rate board.
      */
-    private const SILVER_UNITS = ['tola', '10_tola', '10_gram', '5_gram', 'gram', 'kg'];
+    private const SILVER_BOARD_UNITS = ['10_tola_qr', '10_tola', 'kg', '5_tola', 'tola'];
+
+    /**
+     * Extra calculated silver units kept for legacy app/product calculations.
+     */
+    private const SILVER_DERIVED_UNITS = ['10_gram', '5_gram', 'gram'];
+
+    private const SILVER_UNITS = ['10_tola_qr', '10_tola', 'kg', '5_tola', 'tola', '10_gram', '5_gram', 'gram'];
 
     /**
      * Currency pairs to store.
@@ -470,8 +477,8 @@ class PriceFetcher
 
     /**
      * Admin-set silver buy/sell price per unit, from the Gold & Silver Prices
-     * page. A unit left blank (or zeroed) is derived from the 1-tola rate, so
-     * the admin can set just tola if they prefer.
+     * page. Hidden calculation units are derived from 1-tola so the website can
+     * show only the app package list while existing app/product math still works.
      *
      * @return array<string, array{buy: float, sell: float}>
      */
@@ -492,16 +499,32 @@ class PriceFetcher
             $sell = (float) ($row?->manual_sell_price ?? 0);
 
             if ($buy <= 0) {
-                $buy = (float) ($derivedBuy[$unit] ?? 0);
+                $buy = $this->derivedSilverUnitPrice($unit, $derivedBuy, $rows, 'manual_buy_price');
             }
             if ($sell <= 0) {
-                $sell = (float) ($derivedSell[$unit] ?? 0);
+                $sell = $this->derivedSilverUnitPrice($unit, $derivedSell, $rows, 'manual_sell_price');
             }
 
             $out[$unit] = ['buy' => $buy, 'sell' => $sell];
         }
 
         return $out;
+    }
+
+    private function derivedSilverUnitPrice(string $unit, array $derived, $rows, string $column): float
+    {
+        if ($unit === '10_tola_qr') {
+            $tenTola = (float) ($rows->get('10_tola')?->{$column} ?? 0);
+            if ($tenTola > 0) {
+                return $tenTola;
+            }
+        }
+
+        if ($unit === '5_tola') {
+            return (float) (($derived['tola'] ?? 0) * 5);
+        }
+
+        return (float) ($derived[$unit] ?? 0);
     }
 
     /**

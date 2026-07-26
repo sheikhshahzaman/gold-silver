@@ -12,6 +12,7 @@ use Filament\Schemas\Schema;
 use Filament\Actions\EditAction;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 class PriceMarginResource extends Resource
@@ -61,12 +62,11 @@ class PriceMarginResource extends Resource
     public static function unitLabel(string $unit): string
     {
         return match ($unit) {
-            'tola'    => '1 Tola',
-            '10_tola' => '10 Tola',
-            'kg'      => '1 KG',
-            '10_gram' => '10 Gram',
-            '5_gram'  => '5 Gram',
-            'gram'    => '1 Gram',
+            '10_tola_qr' => '10 Tola (QR Packaging)',
+            '10_tola'    => '10 Tola (999)',
+            'kg'         => '1 KG',
+            '5_tola'     => '5 Tola (Bar)',
+            'tola'       => '1 Tola (Bar)',
             default   => ucwords(str_replace('_', ' ', $unit)),
         };
     }
@@ -106,7 +106,7 @@ class PriceMarginResource extends Resource
 
     /**
      * Text shown after "Buy/Sell Price" in the form: "per Tola" for gold,
-     * "per 10 Gram" / "per 1 KG" / ... for silver (matches the row's unit).
+     * and the selected app package unit for silver.
      */
     public static function marginUnitLabel(?PriceMargin $record): string
     {
@@ -120,7 +120,11 @@ class PriceMarginResource extends Resource
     {
         return $table
             // Gold first (sorted by karat), then silver per unit in display order.
-            ->defaultSort('id')
+            ->modifyQueryUsing(fn (Builder $query) => $query
+                ->orderByRaw("CASE WHEN metal = 'gold' THEN 0 ELSE 1 END")
+                ->orderByRaw("CASE LOWER(COALESCE(karat, '')) WHEN '24k' THEN 0 WHEN 'rawa' THEN 1 WHEN '22k' THEN 2 WHEN '21k' THEN 3 WHEN '18k' THEN 4 ELSE 99 END")
+                ->orderByRaw("CASE unit WHEN '10_tola_qr' THEN 0 WHEN '10_tola' THEN 1 WHEN 'kg' THEN 2 WHEN '5_tola' THEN 3 WHEN 'tola' THEN 4 ELSE 99 END")
+                ->orderBy('id'))
             ->columns([
                 Tables\Columns\TextColumn::make('item')
                     ->label('Item')

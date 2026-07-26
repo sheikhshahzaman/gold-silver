@@ -300,7 +300,13 @@
                             <span class="px-2.5 py-1 rounded-full text-[10px] tracking-wider font-semibold" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); color: #D6D6D6;">PKR</span>
                         </div>
                         @php
-                            $silverUnits = ['kg' => '1 KG', '10_tola' => '10 Tola', 'tola' => '1 Tola', '10_gram' => '10 Gram'];
+                            $silverUnits = [
+                                '10_tola_qr' => ['title' => '10 Tola', 'subtitle' => '(QR Packaging)'],
+                                '10_tola' => ['title' => '10 Tola', 'subtitle' => '(999)'],
+                                'kg' => ['title' => '1 KG', 'subtitle' => null],
+                                '5_tola' => ['title' => '5 Tola', 'subtitle' => '(Bar)'],
+                                'tola' => ['title' => '1 Tola', 'subtitle' => '(Bar)'],
+                            ];
                         @endphp
                         <table class="w-full table-fixed">
                             <thead>
@@ -317,7 +323,12 @@
                                         $sSell = $silverPrices[$unit]['sell'] ?? null;
                                     @endphp
                                     <tr class="border-b border-white/[0.07] last:border-b-0 transition-colors hover:bg-white/[0.03]">
-                                        <td class="py-2.5 text-xs text-white/55">{{ $label }}</td>
+                                        <td class="py-2.5 text-xs text-white/55">
+                                            <span class="block">{{ $label['title'] }}</span>
+                                            @if($label['subtitle'])
+                                                <span class="block text-[10px] text-white/35">{{ $label['subtitle'] }}</span>
+                                            @endif
+                                        </td>
                                         <td class="py-2.5 text-right text-[13px] whitespace-nowrap tabular-nums" style="color: #4CAF50;" @if($sBuy) data-price="{{ $sBuy }}" data-pkey="silver-{{ $unit }}-buy" @endif>{{ $sBuy ? number_format($sBuy) : '---' }}</td>
                                         <td class="py-2.5 text-right text-[13px] whitespace-nowrap tabular-nums" style="color: #FF7043;" @if($sSell) data-price="{{ $sSell }}" data-pkey="silver-{{ $unit }}-sell" @endif>{{ $sSell ? number_format($sSell) : '---' }}</td>
                                     </tr>

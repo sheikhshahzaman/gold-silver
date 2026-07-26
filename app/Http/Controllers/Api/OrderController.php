@@ -289,13 +289,17 @@ class OrderController extends Controller
 
         $silver = $prices['silver'] ?? [];
         $perGram = isset($silver['gram'][$type]) ? (float) $silver['gram'][$type] : null;
+        if ($perGram === null && isset($silver['tola'][$type])) {
+            $perGram = (float) $silver['tola'][$type] / $gramsPerTola;
+        }
 
         $direct = fn (string $key) => isset($silver[$key][$type]) ? (float) $silver[$key][$type] : null;
 
         return match ($unit) {
             'kg' => $direct('kg') ?? ($perGram !== null ? $perGram * 1000 : null),
-            '10_tola', '10_tola_qr' => $direct('10_tola') ?? ($perGram !== null ? $perGram * $gramsPerTola * 10 : null),
-            '5_tola' => $perGram !== null ? $perGram * $gramsPerTola * 5 : null,
+            '10_tola_qr' => $direct('10_tola_qr') ?? $direct('10_tola') ?? ($perGram !== null ? $perGram * $gramsPerTola * 10 : null),
+            '10_tola' => $direct('10_tola') ?? ($perGram !== null ? $perGram * $gramsPerTola * 10 : null),
+            '5_tola' => $direct('5_tola') ?? ($perGram !== null ? $perGram * $gramsPerTola * 5 : null),
             'tola' => $direct('tola') ?? ($perGram !== null ? $perGram * $gramsPerTola : null),
             'gram' => $perGram,
             default => null,
