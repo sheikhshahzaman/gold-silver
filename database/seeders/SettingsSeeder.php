@@ -58,6 +58,12 @@ class SettingsSeeder extends Seeder
             'silver_note_active' => '0',
             'silver_note_en' => '',
             'silver_note_ur' => '',
+            // Optional order SMS/webhook notification settings.
+            'order_sms_enabled' => '0',
+            'order_sms_webhook_url' => '',
+            'order_sms_auth_token' => '',
+            'order_sms_to' => '',
+            'order_sms_template' => 'New order {order_number}: {customer_name} ({customer_phone}), total Rs {total}.',
         ];
 
         foreach ($rateDefaults as $key => $value) {

@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Models\Setting;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -12,6 +13,7 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Illuminate\Support\HtmlString;
 
 class TwoFactorSettings extends Page implements HasForms
 {
@@ -48,8 +50,23 @@ class TwoFactorSettings extends Page implements HasForms
     {
         return $form
             ->schema([
+                Section::make('How WhatsApp 2FA Works')
+                    ->description('This protects admin login. It is WhatsApp Cloud API based, not normal SMS.')
+                    ->schema([
+                        Placeholder::make('two_factor_guidance')
+                            ->label('')
+                            ->content(new HtmlString(
+                                '<div class="space-y-2 text-sm">'
+                                . '<p><strong>What happens:</strong> after email/password login, the admin must enter a one-time code. The code is sent to the WhatsApp numbers listed below.</p>'
+                                . '<p><strong>Where to get API details:</strong> create or open a Meta Developer app at <code>developers.facebook.com</code>, add “WhatsApp”, then open WhatsApp → API Setup. There you will find the <strong>Access Token</strong> and <strong>Phone Number ID</strong>.</p>'
+                                . '<p><strong>Template name:</strong> in Meta WhatsApp Manager, create an approved authentication/utility template that accepts one text value: the login code. Paste the approved template name here.</p>'
+                                . '<p><strong>Recipient numbers:</strong> add trusted admin WhatsApp numbers with country code and no plus sign, e.g. <code>923001234567</code>.</p>'
+                                . '<p><strong>Testing note:</strong> if API fields are empty, the code is written to server logs instead of WhatsApp. That is useful locally, but not secure for production.</p>'
+                                . '</div>'
+                            )),
+                    ]),
                 Section::make('Admin Login Verification')
-                    ->description('When ON, every admin login requires a WhatsApp code in addition to the password. The code is sent to every number listed below.')
+                    ->description('Turn this ON only after your WhatsApp API fields and recipient numbers are ready.')
                     ->schema([
                         Toggle::make('two_factor_enabled')
                             ->label('Require a WhatsApp code to log in')
@@ -63,18 +80,20 @@ class TwoFactorSettings extends Page implements HasForms
                             ->columnSpanFull(),
                     ]),
                 Section::make('WhatsApp Cloud API')
-                    ->description('From your Meta Business/WhatsApp Business Platform account, once approved. Until these are filled in, codes are written to the server log instead of being sent — useful for testing the flow, but NOT secure for real use.')
+                    ->description('Values come from Meta Developer / WhatsApp Business Platform. Search online for “Meta WhatsApp Cloud API setup” if you need the official step-by-step.')
                     ->schema([
                         TextInput::make('whatsapp_api_token')
                             ->label('Access Token')
                             ->password()
                             ->revealable()
-                            ->autocomplete('off'),
+                            ->autocomplete('off')
+                            ->helperText('Meta Developer → your app → WhatsApp → API Setup → Temporary/permanent access token. Use a permanent system-user token for production.'),
                         TextInput::make('whatsapp_phone_number_id')
-                            ->label('Phone Number ID'),
+                            ->label('Phone Number ID')
+                            ->helperText('Meta Developer → WhatsApp → API Setup. This is not your phone number; it is the numeric Phone Number ID.'),
                         TextInput::make('whatsapp_template_name')
                             ->label('Approved Template Name')
-                            ->helperText('The template must accept one text parameter: the code.'),
+                            ->helperText('Meta WhatsApp Manager → Message Templates. Use an approved template that accepts one text parameter: the code.'),
                     ]),
             ])
             ->statePath('data');
