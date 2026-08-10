@@ -220,7 +220,7 @@ class ProductResource extends Resource
             '10_gram' => '10 Gram',
             '50_gram' => '50 Gram',
             '100_gram' => '100 Gram',
-            'ounce' => '1 Ounce (31.1g)',
+            'ounce' => '1 Ounce (31.1035g)',
             'half_tola' => 'Half Tola',
             'tola' => '1 Tola',
             '2_tola' => '2 Tola',

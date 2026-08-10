@@ -1,14 +1,14 @@
 <div class="max-w-2xl mx-auto px-4 py-6">
     {{-- Status Icon --}}
     <div class="text-center mb-6">
-        @if($order->status === 'awaiting_verification')
+        @if($order->status === 'pending')
             <div class="w-20 h-20 mx-auto mb-4 rounded-full flex items-center justify-center" style="background: rgba(198,150,60,0.15);">
                 <svg class="w-10 h-10 text-gold" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
             </div>
-            <h1 class="text-2xl font-bold mb-2" style="color: #0A2E23;">Awaiting Verification</h1>
-            <p class="text-sm" style="color: #888;">We've received your payment proof and will verify it shortly.</p>
+            <h1 class="text-2xl font-bold mb-2" style="color: #0A2E23;">Order Pending</h1>
+            <p class="text-sm" style="color: #888;">We've received your order and will confirm it shortly.</p>
         @elseif($order->status === 'confirmed')
             <div class="w-20 h-20 mx-auto mb-4 rounded-full flex items-center justify-center" style="background: rgba(34,197,94,0.15);">
                 <svg class="w-10 h-10" style="color: #22c55e;" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
@@ -17,6 +17,22 @@
             </div>
             <h1 class="text-2xl font-bold mb-2" style="color: #0A2E23;">Order Confirmed</h1>
             <p class="text-sm" style="color: #888;">Your payment has been verified. We will process your order soon.</p>
+        @elseif($order->status === 'dispatched')
+            <div class="w-20 h-20 mx-auto mb-4 rounded-full flex items-center justify-center" style="background: rgba(59,130,246,0.15);">
+                <svg class="w-10 h-10" style="color: #3b82f6;" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h7.5m-10.5 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25"/>
+                </svg>
+            </div>
+            <h1 class="text-2xl font-bold mb-2" style="color: #0A2E23;">Order Dispatched</h1>
+            <p class="text-sm" style="color: #888;">Your order has been dispatched.</p>
+        @elseif($order->status === 'delivered')
+            <div class="w-20 h-20 mx-auto mb-4 rounded-full flex items-center justify-center" style="background: rgba(34,197,94,0.15);">
+                <svg class="w-10 h-10" style="color: #22c55e;" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+            <h1 class="text-2xl font-bold mb-2" style="color: #0A2E23;">Order Delivered</h1>
+            <p class="text-sm" style="color: #888;">Your order has been delivered.</p>
         @elseif($order->status === 'cancelled')
             <div class="w-20 h-20 mx-auto mb-4 rounded-full flex items-center justify-center" style="background: rgba(239,68,68,0.15);">
                 <svg class="w-10 h-10" style="color: #ef4444;" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
@@ -31,7 +47,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"/>
                 </svg>
             </div>
-            <h1 class="text-2xl font-bold mb-2" style="color: #0A2E23;">{{ ucfirst($order->status) }}</h1>
+            <h1 class="text-2xl font-bold mb-2" style="color: #0A2E23;">{{ $order->display_status }}</h1>
             <p class="text-sm" style="color: #888;">Order #{{ $order->order_number }}</p>
         @endif
     </div>
@@ -210,6 +226,9 @@
     @endif
 
     {{-- Back to Home --}}
+    <a href="{{ route('order.track') }}?order={{ urlencode($order->order_number) }}" class="w-full text-base py-3.5 block text-center rounded-full mb-3" style="border: 1px solid #C6963C; color: #8B6914;">
+        Track Order
+    </a>
     <a href="{{ route('home') }}" class="btn-gold w-full text-base py-3.5 block text-center">
         Back to Home
     </a>

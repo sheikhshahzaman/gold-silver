@@ -69,14 +69,7 @@ class OrderResource extends Resource
                             ->disabled()
                             ->prefix('Rs'),
                         Select::make('status')
-                            ->options([
-                                'pending' => 'Pending',
-                                'awaiting_verification' => 'Awaiting Verification',
-                                'confirmed' => 'Confirmed',
-                                'processing' => 'Processing',
-                                'delivered' => 'Delivered',
-                                'cancelled' => 'Cancelled',
-                            ])
+                            ->options(Order::statusOptions())
                             ->required(),
                     ])
                     ->columns(2),
@@ -107,13 +100,20 @@ class OrderResource extends Resource
                         TextEntry::make('user.name')
                             ->label('Registered User')
                             ->default('Guest'),
+                        TextEntry::make('items_summary')
+                            ->label('Items / Products')
+                            ->columnSpanFull()
+                            ->placeholder('-'),
                         TextEntry::make('metal')
                             ->label('Metal')
-                            ->formatStateUsing(fn (string $state): string => ucfirst($state)),
+                            ->formatStateUsing(fn (?string $state): string => $state ? ucfirst($state) : '-')
+                            ->placeholder('-'),
                         TextEntry::make('karat')
-                            ->label('Karat'),
+                            ->label('Karat')
+                            ->placeholder('-'),
                         TextEntry::make('quantity')
-                            ->label('Quantity'),
+                            ->label('Quantity')
+                            ->placeholder('-'),
                         TextEntry::make('unit')
                             ->label('Unit')
                             ->formatStateUsing(fn (?string $state): string => $state ? ucfirst(str_replace('_', ' ', $state)) : '-'),
@@ -135,16 +135,38 @@ class OrderResource extends Resource
                         TextEntry::make('status')
                             ->label('Status')
                             ->badge()
-                            ->color(fn (string $state): string => match ($state) {
-                                'pending' => 'warning',
-                                'awaiting_verification' => 'info',
-                                'confirmed' => 'success',
-                                'processing' => 'primary',
-                                'delivered' => 'success',
-                                'cancelled' => 'danger',
+                            ->color(fn (?string $state): string => match (Order::normalizeStatus($state)) {
+                                Order::STATUS_PENDING => 'warning',
+                                Order::STATUS_CONFIRMED => 'success',
+                                Order::STATUS_DISPATCHED => 'info',
+                                Order::STATUS_DELIVERED => 'success',
+                                Order::STATUS_CANCELLED => 'danger',
                                 default => 'gray',
                             })
-                            ->formatStateUsing(fn (string $state): string => ucwords(str_replace('_', ' ', $state))),
+                            ->formatStateUsing(fn (?string $state): string => Order::statusOptions()[Order::normalizeStatus($state)] ?? 'Order pending'),
+                        TextEntry::make('delivery_summary')
+                            ->label('Delivery')
+                            ->columnSpanFull()
+                            ->placeholder('-'),
+                        TextEntry::make('payment.method')
+                            ->label('Payment Method')
+                            ->formatStateUsing(fn (?string $state): string => $state ? ucwords(str_replace('_', ' ', $state)) : '-')
+                            ->placeholder('-'),
+                        TextEntry::make('payment.status')
+                            ->label('Payment Status')
+                            ->badge()
+                            ->color(fn (?string $state): string => match ($state) {
+                                'pending' => 'warning',
+                                'verified' => 'success',
+                                'rejected' => 'danger',
+                                'refunded' => 'info',
+                                default => 'gray',
+                            })
+                            ->formatStateUsing(fn (?string $state): string => $state ? ucwords(str_replace('_', ' ', $state)) : '-')
+                            ->placeholder('-'),
+                        TextEntry::make('payment.reference_number')
+                            ->label('Payment Reference')
+                            ->placeholder('-'),
                         TextEntry::make('created_at')
                             ->label('Created At')
                             ->dateTime(),
@@ -175,15 +197,20 @@ class OrderResource extends Resource
                     ->searchable()
                     ->placeholder('-')
                     ->sortable(),
+                Tables\Columns\TextColumn::make('items_summary')
+                    ->label('Items')
+                    ->wrap()
+                    ->limit(80)
+                    ->placeholder('-'),
                 Tables\Columns\TextColumn::make('metal')
                     ->label('Metal')
                     ->badge()
-                    ->color(fn (string $state): string => match ($state) {
+                    ->color(fn (?string $state): string => match ($state) {
                         'gold' => 'warning',
                         'silver' => 'gray',
                         default => 'primary',
                     })
-                    ->formatStateUsing(fn (string $state): string => ucfirst($state))
+                    ->formatStateUsing(fn (?string $state): string => $state ? ucfirst($state) : '-')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('karat')
                     ->label('Karat')
@@ -212,16 +239,15 @@ class OrderResource extends Resource
                 Tables\Columns\TextColumn::make('status')
                     ->label('Status')
                     ->badge()
-                    ->color(fn (string $state): string => match ($state) {
-                        'pending' => 'warning',
-                        'awaiting_verification' => 'info',
-                        'confirmed' => 'success',
-                        'processing' => 'primary',
-                        'delivered' => 'success',
-                        'cancelled' => 'danger',
+                    ->color(fn (?string $state): string => match (Order::normalizeStatus($state)) {
+                        Order::STATUS_PENDING => 'warning',
+                        Order::STATUS_CONFIRMED => 'success',
+                        Order::STATUS_DISPATCHED => 'info',
+                        Order::STATUS_DELIVERED => 'success',
+                        Order::STATUS_CANCELLED => 'danger',
                         default => 'gray',
                     })
-                    ->formatStateUsing(fn (string $state): string => ucwords(str_replace('_', ' ', $state)))
+                    ->formatStateUsing(fn (?string $state): string => Order::statusOptions()[Order::normalizeStatus($state)] ?? 'Order pending')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Created At')
@@ -230,14 +256,7 @@ class OrderResource extends Resource
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('status')
-                    ->options([
-                        'pending' => 'Pending',
-                        'awaiting_verification' => 'Awaiting Verification',
-                        'confirmed' => 'Confirmed',
-                        'processing' => 'Processing',
-                        'delivered' => 'Delivered',
-                        'cancelled' => 'Cancelled',
-                    ]),
+                    ->options(Order::statusOptions()),
                 Tables\Filters\SelectFilter::make('metal')
                     ->options([
                         'gold' => 'Gold',

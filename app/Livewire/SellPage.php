@@ -265,6 +265,8 @@ class SellPage extends Component
 
     public function placeOrder()
     {
+        $this->loadPrices();
+        $this->calculatePrice();
         $unitPrice = $this->getUnitSellPrice();
 
         if ($unitPrice === null) {
@@ -279,7 +281,7 @@ class SellPage extends Component
             'type' => 'sell',
             'locked_price' => $unitPrice,
             'total_amount' => $unitPrice * $this->quantity,
-            'status' => 'pending',
+            'status' => Order::STATUS_PENDING,
         ]);
 
         return redirect()->route('checkout', $order->order_number);

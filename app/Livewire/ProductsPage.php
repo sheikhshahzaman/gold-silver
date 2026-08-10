@@ -26,10 +26,7 @@ class ProductsPage extends Component
 
     public function mount(): void
     {
-        $cacheManager = app(PriceCacheManager::class);
-        $allPrices = $cacheManager->getAllPrices();
-        $this->goldPrices = $allPrices['gold'] ?: [];
-        $this->silverPrices = $allPrices['silver'] ?: [];
+        $this->refreshPrices();
 
         // Honour ?category=<slug> from incoming links (e.g. the home-page chips).
         $slug = request()->query('category');
@@ -46,6 +43,14 @@ class ProductsPage extends Component
         $this->categoryId = $id;
     }
 
+    public function refreshPrices(): void
+    {
+        $cacheManager = app(PriceCacheManager::class);
+        $allPrices = $cacheManager->getAllPrices();
+        $this->goldPrices = $allPrices['gold'] ?: [];
+        $this->silverPrices = $allPrices['silver'] ?: [];
+    }
+
     /** Add a product to the cart and flash a confirmation badge on its card. */
     public function addToCart(int $productId): void
     {
@@ -58,6 +63,8 @@ class ProductsPage extends Component
 
     public function render()
     {
+        $this->refreshPrices();
+
         $query = Product::with('productCategory')->active()->ordered();
 
         if ($this->categoryId !== 'all') {

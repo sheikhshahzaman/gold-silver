@@ -9,6 +9,8 @@ use App\Models\Payment;
 use App\Models\Product;
 use App\Models\Setting;
 use App\Services\Cart;
+use App\Services\Orders\OrderNotificationService;
+use App\Services\Orders\OrderPricingService;
 use App\Services\PriceEngine\PriceCacheManager;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -64,7 +66,7 @@ class OrderController extends Controller
                 'customer_name' => $data['customer_name'],
                 'customer_phone' => $data['customer_phone'],
                 'total_amount' => $total,
-                'status' => 'pending',
+                'status' => Order::STATUS_PENDING,
             ]);
 
             foreach ($lines as $line) {
@@ -75,6 +77,7 @@ class OrderController extends Controller
                     'product_weight' => $line['product']->weight,
                     'metal' => $line['product']->metal,
                     'karat' => $line['product']->karat,
+                    'unit' => $line['product']->unit,
                     'quantity' => $line['quantity'],
                     'unit_price' => $line['unit'],
                     'packaging_charge' => $line['packaging'],
@@ -147,7 +150,7 @@ class OrderController extends Controller
             'total_amount' => $total,
             'customer_name' => $data['customer_name'],
             'customer_phone' => $data['customer_phone'],
-            'status' => 'pending',
+            'status' => Order::STATUS_PENDING,
         ]);
 
         return response()->json([
@@ -158,9 +161,13 @@ class OrderController extends Controller
 
     public function show(string $orderNumber): JsonResponse
     {
-        $order = Order::with(['items', 'payment'])
+        $order = Order::with(['items.product', 'payment'])
             ->where('order_number', $orderNumber)
             ->firstOrFail();
+
+        if ($order->status === Order::STATUS_PENDING && ! $order->payment) {
+            $order = app(OrderPricingService::class)->refreshCartOrder($order);
+        }
 
         return response()->json([
             'order' => $this->orderPayload($order),
@@ -174,7 +181,7 @@ class OrderController extends Controller
      */
     public function submitPayment(Request $request, string $orderNumber): JsonResponse
     {
-        $order = Order::with('payment')->where('order_number', $orderNumber)->firstOrFail();
+        $order = Order::with(['items.product', 'payment'])->where('order_number', $orderNumber)->firstOrFail();
 
         if ($order->payment) {
             return response()->json(['message' => 'Payment has already been submitted for this order.'], 409);
@@ -198,6 +205,8 @@ class OrderController extends Controller
             'delivery_charge' => $deliveryCharge,
         ]);
 
+        $order = app(OrderPricingService::class)->refreshCartOrder($order);
+
         $path = $request->file('proof_image')->store('payment-proofs', 'public');
 
         Payment::create([
@@ -209,7 +218,8 @@ class OrderController extends Controller
             'status' => 'pending',
         ]);
 
-        $order->update(['status' => 'awaiting_verification']);
+        $order->update(['status' => Order::STATUS_PENDING]);
+        app(OrderNotificationService::class)->notifyOrderSubmitted($order->fresh(['items', 'payment']));
 
         return response()->json(['order' => $this->orderPayload($order->fresh(['items', 'payment']))]);
     }
@@ -249,6 +259,7 @@ class OrderController extends Controller
         return [
             'order_number' => $order->order_number,
             'status' => $order->status,
+            'status_label' => $order->display_status,
             'type' => $order->type,
             'customer_name' => $order->customer_name,
             'customer_phone' => $order->customer_phone,
@@ -264,6 +275,11 @@ class OrderController extends Controller
                 'status' => $order->payment->status,
                 'reference_number' => $order->payment->reference_number,
             ] : null,
+            'tracking' => [
+                'current_status' => Order::normalizeStatus($order->status),
+                'current_label' => $order->display_status,
+                'steps' => $order->trackingSteps(),
+            ],
         ];
     }
 

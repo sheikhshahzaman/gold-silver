@@ -294,6 +294,8 @@ class BuyPage extends Component
 
     public function placeOrder()
     {
+        $this->loadPrices();
+        $this->calculatePrice();
         $unitPrice = $this->getUnitBuyPrice();
 
         if ($unitPrice === null) {
@@ -308,7 +310,7 @@ class BuyPage extends Component
             'type' => 'buy',
             'locked_price' => $unitPrice,
             'total_amount' => $unitPrice * $this->quantity,
-            'status' => 'pending',
+            'status' => Order::STATUS_PENDING,
         ]);
 
         return redirect()->route('checkout', $order->order_number);

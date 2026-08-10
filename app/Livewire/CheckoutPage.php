@@ -5,6 +5,8 @@ namespace App\Livewire;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Models\Setting;
+use App\Services\Orders\OrderNotificationService;
+use App\Services\Orders\OrderPricingService;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -39,11 +41,13 @@ class CheckoutPage extends Component
 
     public function mount(string $orderNumber): void
     {
-        $this->order = Order::where('order_number', $orderNumber)
+        $this->order = Order::with(['items.product', 'payment'])->where('order_number', $orderNumber)
             ->whereNull('customer_name')
             ->where('status', 'pending')
             ->whereDoesntHave('payment')
             ->firstOrFail();
+
+        $this->refreshOrderPricing();
 
         $this->loadPaymentAccounts();
         $this->deliveryCharge = (float) Setting::get('delivery_charge', 0);
@@ -78,6 +82,8 @@ class CheckoutPage extends Component
             'customer_phone' => $this->customerPhone,
         ]);
 
+        $this->refreshOrderPricing();
+
         $this->step = 2;
     }
 
@@ -102,6 +108,8 @@ class CheckoutPage extends Component
             'delivery_address' => $this->deliveryMethod === 'delivery' ? $this->deliveryAddress : null,
             'delivery_charge' => $this->deliveryMethod === 'delivery' ? $this->deliveryCharge : 0,
         ]);
+
+        $this->refreshOrderPricing();
 
         $this->step = 3;
     }
@@ -140,6 +148,8 @@ class CheckoutPage extends Component
             'proofImage.max' => 'The image must not be larger than 5MB.',
         ]);
 
+        $this->refreshOrderPricing();
+
         $path = $this->proofImage->store('payment-proofs', 'public');
 
         Payment::create([
@@ -151,9 +161,15 @@ class CheckoutPage extends Component
             'status' => 'pending',
         ]);
 
-        $this->order->update(['status' => 'awaiting_verification']);
+        $this->order->update(['status' => Order::STATUS_PENDING]);
+        app(OrderNotificationService::class)->notifyOrderSubmitted($this->order->fresh(['items', 'payment']));
 
         redirect()->route('order.show', $this->order->order_number);
+    }
+
+    public function refreshOrderPricing(): void
+    {
+        $this->order = app(OrderPricingService::class)->refreshCartOrder($this->order);
     }
 
     private function loadPaymentAccounts(): void
@@ -170,6 +186,8 @@ class CheckoutPage extends Component
 
     public function render()
     {
+        $this->refreshOrderPricing();
+
         return view('livewire.checkout-page');
     }
 }

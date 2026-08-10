@@ -1,4 +1,4 @@
-<div>
+<div wire:poll.5s>
     <section class="py-12 sm:py-16 px-4 sm:px-6 lg:px-8" style="background: linear-gradient(180deg, #FAF6EE 0%, #F4EDDD 100%); min-height: 80vh;">
         <div class="max-w-6xl mx-auto">
 

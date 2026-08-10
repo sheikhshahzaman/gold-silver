@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    'order_sms' => [
+        'webhook_url' => env('ORDER_SMS_WEBHOOK_URL'),
+        'to' => env('ORDER_SMS_TO'),
+    ],
+
 ];

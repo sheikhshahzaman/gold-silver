@@ -76,7 +76,7 @@ class LivePriceKeyTest extends TestCase
 
         $this->assertEquals(round($perGram * 2.5, 2), $cart->unitPriceFor($this->makeLiveProduct('gold.24k.2.5_gram')));
         $this->assertEquals(round($perGram * 50, 2), $cart->unitPriceFor($this->makeLiveProduct('gold.24k.50_gram')));
-        $this->assertEquals(round($perGram * 31.1034768, 2), $cart->unitPriceFor($this->makeLiveProduct('gold.24k.ounce')));
+        $this->assertEquals(round($perGram * 31.1035, 2), $cart->unitPriceFor($this->makeLiveProduct('gold.24k.ounce')));
         $this->assertEquals(round(445600 / 2, 2), $cart->unitPriceFor($this->makeLiveProduct('gold.24k.half_tola')));
         $this->assertEquals(round(445600 * 2, 2), $cart->unitPriceFor($this->makeLiveProduct('gold.24k.2_tola')));
 
@@ -91,8 +91,8 @@ class LivePriceKeyTest extends TestCase
         $cart = app(Cart::class);
 
         $quote = $cart->unitQuoteFor($this->makeLiveProduct('gold.24k.ounce'));
-        $this->assertEquals(round(445600 / Cart::GRAMS_PER_TOLA * 31.1034768, 2), $quote['buy']);
-        $this->assertEquals(round(446500 / Cart::GRAMS_PER_TOLA * 31.1034768, 2), $quote['sell']);
+        $this->assertEquals(round(445600 / Cart::GRAMS_PER_TOLA * 31.1035, 2), $quote['buy']);
+        $this->assertEquals(round(446500 / Cart::GRAMS_PER_TOLA * 31.1035, 2), $quote['sell']);
 
         $exact = $cart->unitQuoteFor($this->makeLiveProduct('silver.tola'));
         $this->assertEquals(7960.0, $exact['buy']);

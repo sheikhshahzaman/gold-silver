@@ -3,6 +3,7 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\PaymentResource\Pages;
+use App\Models\Order;
 use App\Models\Payment;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
@@ -190,7 +191,7 @@ class PaymentResource extends Resource
                                 'verified_at' => now(),
                             ]);
                             if (in_array($record->order->status, ['pending', 'awaiting_verification'], true)) {
-                                $record->order->update(['status' => 'confirmed']);
+                                $record->order->update(['status' => Order::STATUS_CONFIRMED]);
                             }
                         });
                     }),
@@ -208,7 +209,7 @@ class PaymentResource extends Resource
                                 'status' => 'rejected',
                             ]);
                             if (in_array($record->order->status, ['pending', 'awaiting_verification'], true)) {
-                                $record->order->update(['status' => 'cancelled']);
+                                $record->order->update(['status' => Order::STATUS_CANCELLED]);
                             }
                         });
                     }),

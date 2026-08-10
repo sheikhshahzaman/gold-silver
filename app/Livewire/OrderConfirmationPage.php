@@ -19,7 +19,7 @@ class OrderConfirmationPage extends Component
 
     public function mount(string $orderNumber): void
     {
-        $this->order = Order::with('payment')->where('order_number', $orderNumber)->firstOrFail();
+        $this->order = Order::with(['items', 'payment'])->where('order_number', $orderNumber)->firstOrFail();
         $this->whatsappNumber = Setting::get('contact_whatsapp', '');
         $this->contactPhone = Setting::get('contact_phone', '');
         $this->contactAddress = Setting::get('contact_address', '');
