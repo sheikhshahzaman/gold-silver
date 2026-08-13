@@ -39,8 +39,7 @@
                 @php
                     $navItems = [
                         ['route' => 'home', 'href' => '/', 'label' => 'Home'],
-                        ['route' => 'buy', 'href' => '/buy', 'label' => 'Buy Gold'],
-                        ['route' => 'sell', 'href' => '/sell', 'label' => 'Sell Gold'],
+                        ['route' => 'products', 'href' => '/products', 'label' => 'Products'],
                         ['route' => 'page.about-us', 'href' => '/about-us', 'label' => 'About Us'],
                         ['route' => 'contact', 'href' => '/contact', 'label' => 'Contact'],
                     ];
@@ -69,7 +68,7 @@
                     Live Rates
                 </a>
                 <livewire:cart-icon-widget variant="dark" />
-                <a href="/buy" class="px-4 py-2 rounded text-xs font-medium" style="background: #C9A84C; color: #0F2419;">Get Quote</a>
+                <a href="/products" class="px-4 py-2 rounded text-xs font-medium" style="background: #C9A84C; color: #0F2419;">Shop Now</a>
             </div>
 
         </div>

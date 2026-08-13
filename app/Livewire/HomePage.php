@@ -30,7 +30,13 @@ class HomePage extends Component
     {
         $product = Product::find($productId);
         if (!$product) return;
-        app(Cart::class)->add($product, 1);
+        $cart = app(Cart::class);
+        if ($cart->unitPriceFor($product) === null) {
+            $this->addError('cart', 'This product price is not available right now.');
+            return;
+        }
+
+        $cart->add($product, 1);
         $this->justAdded[$productId] = true;
         $this->dispatch('cart-updated');
     }

@@ -49,8 +49,8 @@
                     Buy and sell certified gold and silver at live market rates. Transparent pricing, authentic hallmarked products, and expert guidance — all in one place.
                 </p>
                 <div data-reveal data-reveal-delay="300" class="flex flex-wrap gap-3">
-                    <a href="/buy" class="group inline-flex items-center gap-2 px-7 py-3.5 rounded-full text-sm font-semibold transition-all duration-300 hover:shadow-[0_10px_30px_rgba(201,168,76,0.45)] hover:-translate-y-0.5" style="background: linear-gradient(135deg, #E8C96A, #C9A84C 60%, #A67922); color: #0A2E23;">
-                        Buy Gold Now
+                    <a href="/products" class="group inline-flex items-center gap-2 px-7 py-3.5 rounded-full text-sm font-semibold transition-all duration-300 hover:shadow-[0_10px_30px_rgba(201,168,76,0.45)] hover:-translate-y-0.5" style="background: linear-gradient(135deg, #E8C96A, #C9A84C 60%, #A67922); color: #0A2E23;">
+                        Shop Products
                         <svg class="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17.25 8.25L21 12m0 0l-3.75 3.75M21 12H3"/></svg>
                     </a>
                     <a href="/live" class="inline-flex items-center gap-2 px-7 py-3.5 rounded-full text-sm font-medium border transition-all duration-300 hover:bg-white/10 hover:-translate-y-0.5" style="color: #E8C96A; border-color: rgba(201,168,76,0.5); backdrop-filter: blur(4px);">
@@ -368,6 +368,12 @@
                 @endforeach
             </div>
 
+            @error('cart')
+                <div class="mb-5 rounded-xl px-4 py-3 text-sm" style="background: #FFF3CD; color: #7A4F00; border: 1px solid #F5D77A;">
+                    {{ $message }}
+                </div>
+            @enderror
+
             {{-- Product grid --}}
             <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
                 @foreach($products as $idx => $prod)
@@ -539,8 +545,8 @@
                         <select class="w-full appearance-none px-3.5 py-2.5 pr-10 rounded-xl text-sm transition-all focus:outline-none cursor-pointer" style="border: 1px solid #DDD3BC; color: #1A1A1A; background: #FDFBF6;"
                                 onfocus="this.style.borderColor='#C9A84C'; this.style.boxShadow='0 0 0 3px rgba(201,168,76,0.12)'"
                                 onblur="this.style.borderColor='#DDD3BC'; this.style.boxShadow='none'">
-                            <option>Buy Gold</option>
-                            <option>Buy Silver</option>
+                            <option>Gold Products</option>
+                            <option>Silver Products</option>
                             <option>Custom Jewelry</option>
                         </select>
                         <svg class="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style="color: #A67922;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/></svg>

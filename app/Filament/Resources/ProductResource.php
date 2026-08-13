@@ -89,7 +89,6 @@ class ProductResource extends Resource
                         ->options([
                             'live' => 'Live Price (from market rates)',
                             'fixed' => 'Fixed Price (set manually)',
-                            'custom_quote' => 'Custom Quote (enquiry only)',
                         ])
                         ->default('live')
                         ->reactive(),
@@ -192,7 +191,7 @@ class ProductResource extends Resource
                     ->label('Category')
                     ->options(ProductCategory::pluck('name', 'id')),
                 Tables\Filters\SelectFilter::make('price_type')->options([
-                    'live' => 'Live Price', 'fixed' => 'Fixed Price', 'custom_quote' => 'Custom Quote',
+                    'live' => 'Live Price', 'fixed' => 'Fixed Price',
                 ]),
             ])
             ->actions([EditAction::make(), DeleteAction::make()])

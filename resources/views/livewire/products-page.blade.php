@@ -38,6 +38,12 @@
                 @endforeach
             </div>
 
+            @error('cart')
+                <div class="mb-5 rounded-xl px-4 py-3 text-sm" style="background: #FFF3CD; color: #7A4F00; border: 1px solid #F5D77A;">
+                    {{ $message }}
+                </div>
+            @enderror
+
             {{-- Products Grid --}}
             @if($products->count())
                 <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">

@@ -27,26 +27,13 @@
     $livePrice = $liveQuote['buy'] ?? null;
     $liveSell = $liveQuote['sell'] ?? null;
 
-    $showPrice = $prod->productCategory?->show_live_price ?? false;
-    if (!$showPrice || $prod->price_type === 'custom_quote') {
-        $prodUrl = '/contact?subject=' . urlencode('Enquiry: ' . $prod->name);
-        $isEnquiry = true;
-    } elseif ($prod->price_key) {
-        $keyParts = explode('.', $prod->price_key);
-        $prodUrl = '/buy?metal=' . $keyParts[0]
-            . ($keyParts[0] === 'gold' && isset($keyParts[1]) ? '&karat=' . $keyParts[1] : '')
-            . (isset($keyParts[2]) ? '&unit=' . $keyParts[2] : (isset($keyParts[1]) && $keyParts[0] === 'silver' ? '&unit=' . $keyParts[1] : ''))
-            . '&product=' . urlencode($prod->name);
-        $isEnquiry = false;
-    } else {
-        $prodUrl = '/buy?metal=' . $prod->metal . '&product=' . urlencode($prod->name);
-        $isEnquiry = false;
-    }
+    $isPurchasable = ($prod->price_type === 'fixed' && $prod->fixed_price)
+        || ($prod->price_type === 'live' && $prod->price_key && $livePrice !== null);
 @endphp
 
 <div wire:key="prod-card-{{ $prod->id }}" data-reveal data-reveal-delay="{{ 80 + ($index % 4) * 80 }}" class="product-card group flex flex-col">
     <div class="product-media relative overflow-hidden">
-        @if(!$isEnquiry && $prod->discount_label)
+        @if($isPurchasable && $prod->discount_label)
             <span class="absolute top-2.5 left-2.5 z-10 px-2.5 py-1 rounded-full text-[10px] font-bold text-white shadow-md" style="background: linear-gradient(135deg, #E53935, #C62828);">{{ $prod->discount_label }}</span>
         @endif
         <span class="absolute top-2.5 right-2.5 z-10 w-7 h-7 rounded-full flex items-center justify-center text-[9px] font-bold shadow-sm" style="{{ $prod->metal === 'silver' ? 'background: linear-gradient(135deg, #E0E0E0, #9E9E9E); color: #1A1A1A;' : 'background: linear-gradient(135deg, #E8C96A, #A67922); color: #0A2E23;' }}">{{ $prod->metal === 'silver' ? 'Ag' : 'Au' }}</span>
@@ -74,10 +61,7 @@
         @endif
 
         <div class="min-h-[40px] mb-3 mt-auto">
-            @if($isEnquiry)
-                <div class="text-sm font-semibold" style="color: #0D3D1F;">Get Quote</div>
-                <div class="text-[11px]" style="color: #8A8270;">Custom pricing</div>
-            @elseif($prod->price_type === 'fixed' && $prod->fixed_price)
+            @if($prod->price_type === 'fixed' && $prod->fixed_price)
                 @if($prod->hasActiveDiscount())
                     <div class="text-[11px] line-through" style="color: #B0A890;">Rs {{ number_format($prod->fixed_price) }}</div>
                     <div class="text-base font-bold tabular-nums" style="color: #E53935;">Rs {{ number_format($prod->applyDiscount($prod->fixed_price)) }}</div>
@@ -95,34 +79,29 @@
                     @endif
                 @endif
             @else
-                <div class="text-sm font-semibold" style="color: #0D3D1F;">Contact for price</div>
+                <div class="text-sm font-semibold" style="color: #0D3D1F;">Price unavailable</div>
+                <div class="text-[11px]" style="color: #8A8270;">Please check again shortly</div>
             @endif
         </div>
 
-        @if($isEnquiry)
-            <a href="{{ $prodUrl }}" class="btn-cart">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z"/></svg>
-                Enquire Now
-            </a>
-        @else
-            <button wire:click="addToCart({{ $prod->id }})"
-                    wire:loading.attr="disabled"
-                    wire:target="addToCart({{ $prod->id }})"
-                    class="btn-cart {{ $added ? 'is-added' : '' }}">
-                <span wire:loading.remove wire:target="addToCart({{ $prod->id }})" class="inline-flex items-center gap-1.5">
-                    @if($added)
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
-                        Added to Cart
-                    @else
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z"/></svg>
-                        Add to Cart
-                    @endif
-                </span>
-                <span wire:loading wire:target="addToCart({{ $prod->id }})" class="inline-flex items-center gap-1.5">
-                    <svg class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
-                    Adding...
-                </span>
-            </button>
-        @endif
+        <button wire:click="addToCart({{ $prod->id }})"
+                wire:loading.attr="disabled"
+                wire:target="addToCart({{ $prod->id }})"
+                @disabled(!$isPurchasable)
+                class="btn-cart {{ $added ? 'is-added' : '' }}">
+            <span wire:loading.remove wire:target="addToCart({{ $prod->id }})" class="inline-flex items-center gap-1.5">
+                @if($added)
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
+                    Added to Cart
+                @else
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z"/></svg>
+                    {{ $isPurchasable ? 'Add to Cart' : 'Unavailable' }}
+                @endif
+            </span>
+            <span wire:loading wire:target="addToCart({{ $prod->id }})" class="inline-flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                Adding...
+            </span>
+        </button>
     </div>
 </div>
