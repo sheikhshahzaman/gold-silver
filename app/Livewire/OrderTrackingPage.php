@@ -64,7 +64,6 @@ class OrderTrackingPage extends Component
     private function formatOrderNumber(string $value): string
     {
         $cleaned = preg_replace('/[^A-Za-z0-9]/', '', strtoupper($value)) ?? '';
-        $cleaned = preg_replace('/^ORD/', '', $cleaned) ?? '';
 
         if ($cleaned === '') {
             return '';
@@ -74,7 +73,7 @@ class OrderTrackingPage extends Component
         $first = substr($body, 0, 8);
         $second = substr($body, 8, 10);
 
-        return 'ORD-'.$first.($second !== '' ? '-'.$second : '');
+        return $first.($second !== '' ? '-'.$second : '');
     }
 
     public function render()
