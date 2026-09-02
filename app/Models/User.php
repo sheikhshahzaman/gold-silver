@@ -25,6 +25,8 @@ class User extends Authenticatable implements FilamentUser
         'password',
         'role',
         'phone',
+        'is_active',
+        'staff_permissions',
     ];
 
     /**
@@ -47,6 +49,8 @@ class User extends Authenticatable implements FilamentUser
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_active' => 'boolean',
+            'staff_permissions' => 'array',
         ];
     }
 
@@ -59,10 +63,38 @@ class User extends Authenticatable implements FilamentUser
     }
 
     /**
+     * Check if the user is a staff member.
+     */
+    public function isStaff(): bool
+    {
+        return $this->role === 'staff';
+    }
+
+    /**
+     * Check if the account can currently be used.
+     */
+    public function isActive(): bool
+    {
+        return $this->is_active ?? true;
+    }
+
+    /**
+     * Check a staff permission key like "products.edit".
+     */
+    public function hasStaffPermission(string $feature, string $action): bool
+    {
+        if (! $this->isStaff() || ! $this->isActive()) {
+            return false;
+        }
+
+        return in_array("{$feature}.{$action}", $this->staff_permissions ?? [], true);
+    }
+
+    /**
      * Determine if the user can access the Filament panel.
      */
     public function canAccessPanel(Panel $panel): bool
     {
-        return $this->isAdmin();
+        return $this->isActive() && ($this->isAdmin() || $this->isStaff());
     }
 }

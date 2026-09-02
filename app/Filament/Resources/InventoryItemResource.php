@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\InventoryItemResource\Pages;
 use App\Models\InventoryItem;
 use App\Models\Product;
+use App\Support\StaffAccess;
 use App\Services\QrPdfGenerator;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
@@ -152,7 +153,7 @@ class InventoryItemResource extends Resource
                     ->label('Mark Sold')
                     ->icon('heroicon-o-check-circle')
                     ->color('warning')
-                    ->visible(fn ($record) => $record->status === 'in_stock' || $record->status === 'reserved')
+                    ->visible(fn ($record) => ($record->status === 'in_stock' || $record->status === 'reserved') && StaffAccess::can('inventory_items', StaffAccess::ACTION_EDIT))
                     ->form([
                         TextInput::make('sold_to_name')
                             ->label('Customer Name')
@@ -192,6 +193,7 @@ class InventoryItemResource extends Resource
                     BulkAction::make('printQrCodes')
                         ->label('Print QR Codes')
                         ->icon('heroicon-o-printer')
+                        ->visible(fn (): bool => StaffAccess::can('inventory_items', StaffAccess::ACTION_VIEW))
                         ->form([
                             Select::make('qr_size')
                                 ->label('QR Sticker Size')

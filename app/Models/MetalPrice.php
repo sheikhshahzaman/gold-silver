@@ -35,10 +35,10 @@ class MetalPrice extends Model
     {
         return [
             'fetched_at' => 'datetime',
-            'buy_price' => 'decimal:2',
-            'sell_price' => 'decimal:2',
-            'high' => 'decimal:2',
-            'low' => 'decimal:2',
+            'buy_price' => 'decimal:4',
+            'sell_price' => 'decimal:4',
+            'high' => 'decimal:4',
+            'low' => 'decimal:4',
         ];
     }
 

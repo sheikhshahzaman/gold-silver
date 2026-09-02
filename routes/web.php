@@ -1,6 +1,7 @@
 <?php
 
 use App\Livewire\CartPage;
+use App\Livewire\BuyCalculatorPage;
 use App\Livewire\CheckoutPage;
 use App\Livewire\ContactPage;
 use App\Livewire\HomePage;
@@ -24,6 +25,7 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', HomePage::class)->name('home');
 Route::get('/live', SpotPricePage::class)->name('live');
 Route::get('/products', ProductsPage::class)->name('products');
+Route::get('/buy-calculator', BuyCalculatorPage::class)->name('buy.calculator');
 Route::get('/buy', fn () => abort(404));
 Route::get('/sell', fn () => abort(404));
 Route::get('/contact', ContactPage::class)->name('contact');

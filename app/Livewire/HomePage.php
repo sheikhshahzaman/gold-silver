@@ -9,7 +9,7 @@ use App\Models\Service;
 use App\Models\Setting;
 use App\Models\Testimonial;
 use App\Services\Cart;
-use App\Services\PriceEngine\PriceCacheManager;
+use App\Services\Rates\RatesProvider;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -43,8 +43,7 @@ class HomePage extends Component
 
     public function mount(): void
     {
-        $cacheManager = app(PriceCacheManager::class);
-        $allPrices = $cacheManager->getAllPrices();
+        $allPrices = app(RatesProvider::class)->getAllPrices();
 
         $this->goldPrices = $allPrices['gold'] ?: [];
         $this->silverPrices = $allPrices['silver'] ?: [];

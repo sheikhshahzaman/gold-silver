@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\ProductResource\RelationManagers;
 
 use App\Models\InventoryItem;
+use App\Support\StaffAccess;
 use App\Services\QrPdfGenerator;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
@@ -73,6 +74,7 @@ class InventoryItemsRelationManager extends RelationManager
                 Action::make('generateBatch')
                     ->label('Generate Batch')
                     ->icon('heroicon-o-plus-circle')
+                    ->visible(fn (): bool => StaffAccess::can('inventory_items', StaffAccess::ACTION_CREATE))
                     ->form([
                         TextInput::make('count')
                             ->label('Number of Items')
@@ -107,7 +109,7 @@ class InventoryItemsRelationManager extends RelationManager
                     ->label('Sell')
                     ->icon('heroicon-o-check-circle')
                     ->color('warning')
-                    ->visible(fn ($record) => in_array($record->status, ['in_stock', 'reserved']))
+                    ->visible(fn ($record) => in_array($record->status, ['in_stock', 'reserved']) && StaffAccess::can('inventory_items', StaffAccess::ACTION_EDIT))
                     ->form([
                         TextInput::make('sold_to_name')->label('Customer Name')->required(),
                         TextInput::make('sold_to_phone')->label('Phone')->required()->tel(),
@@ -124,6 +126,7 @@ class InventoryItemsRelationManager extends RelationManager
                     BulkAction::make('printQrCodes')
                         ->label('Print QR Codes')
                         ->icon('heroicon-o-printer')
+                        ->visible(fn (): bool => StaffAccess::can('inventory_items', StaffAccess::ACTION_VIEW))
                         ->action(function (Collection $records) {
                             $pdf = (new QrPdfGenerator())->generate($records);
                             return response()->streamDownload(

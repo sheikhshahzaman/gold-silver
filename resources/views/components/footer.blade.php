@@ -45,6 +45,7 @@
                     @foreach([
                         ['href' => '/', 'label' => 'Home'],
                         ['href' => '/products', 'label' => 'Products'],
+                        ['href' => '/buy-calculator', 'label' => 'Buy Calculator'],
                         ['href' => '/zakat-calculator', 'label' => 'Zakat Calculator'],
                         ['href' => '/scan', 'label' => 'Scan QR Code'],
                         ['href' => '/verify', 'label' => 'Verify Serial Number'],

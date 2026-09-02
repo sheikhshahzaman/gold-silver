@@ -2,9 +2,15 @@
 
 namespace App\Providers;
 
-use App\Services\PriceEngine\PriceCacheManager;
-use App\Services\PriceEngine\PriceCalculator;
-use App\Services\PriceEngine\PriceFetcher;
+use App\Models\User;
+use App\Services\Rates\HybridRatesProvider;
+use App\Services\Rates\RatesProvider;
+use App\Services\Rates\RemoteRatesProvider;
+use App\Support\StaffAccess;
+use App\Support\StaffAuditLogger;
+use Filament\Resources\Resource;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -14,19 +20,43 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->app->singleton(PriceCalculator::class, function () {
-            return new PriceCalculator();
-        });
+        $priceCalculator = \App\Services\PriceEngine\PriceCalculator::class;
+        $priceCacheManager = \App\Services\PriceEngine\PriceCacheManager::class;
+        $priceFetcher = \App\Services\PriceEngine\PriceFetcher::class;
 
-        $this->app->singleton(PriceCacheManager::class, function () {
-            return new PriceCacheManager();
-        });
+        if (class_exists($priceCalculator)) {
+            $this->app->singleton($priceCalculator, fn () => new $priceCalculator());
+        }
 
-        $this->app->singleton(PriceFetcher::class, function ($app) {
-            return new PriceFetcher(
-                $app->make(PriceCalculator::class),
-                $app->make(PriceCacheManager::class),
-            );
+        if (class_exists($priceCacheManager)) {
+            $this->app->singleton($priceCacheManager, fn () => new $priceCacheManager());
+        }
+
+        if (class_exists($priceFetcher) && class_exists($priceCalculator) && class_exists($priceCacheManager)) {
+            $this->app->singleton($priceFetcher, fn ($app) => new $priceFetcher(
+                $app->make($priceCalculator),
+                $app->make($priceCacheManager),
+            ));
+        }
+
+        $this->app->singleton(RatesProvider::class, function ($app) {
+            $source = config('services.rates.source', 'local');
+
+            if ($source === 'remote') {
+                return $app->make(RemoteRatesProvider::class);
+            }
+
+            if ($source === 'hybrid') {
+                return $app->make(HybridRatesProvider::class);
+            }
+
+            $localRatesProvider = \App\Services\Rates\LocalRatesProvider::class;
+
+            if (class_exists($localRatesProvider)) {
+                return $app->make($localRatesProvider);
+            }
+
+            return $app->make(HybridRatesProvider::class);
         });
     }
 
@@ -35,6 +65,47 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        Resource::checkPolicyExistence(false);
+
+        Gate::before(function (User $user, string $ability, mixed $arguments = null): ?bool {
+            if (! $user->isActive()) {
+                return false;
+            }
+
+            $arguments = is_array($arguments) ? $arguments : [$arguments];
+            $model = $arguments[0] ?? null;
+            $feature = StaffAccess::featureForModel($model);
+            $action = StaffAccess::actionForAbility($ability);
+
+            if (! $feature || ! $action) {
+                return null;
+            }
+
+            return StaffAccess::can($feature, $action, $user);
+        });
+
+        foreach (StaffAccess::modelFeatureMap() as $modelClass => $feature) {
+            if (! is_subclass_of($modelClass, Model::class)) {
+                continue;
+            }
+
+            $modelClass::created(fn (Model $record) => StaffAuditLogger::recordModelChange(
+                $feature,
+                StaffAccess::ACTION_CREATE,
+                $record,
+            ));
+
+            $modelClass::updated(fn (Model $record) => StaffAuditLogger::recordModelChange(
+                $feature,
+                StaffAccess::ACTION_EDIT,
+                $record,
+            ));
+
+            $modelClass::deleted(fn (Model $record) => StaffAuditLogger::recordModelChange(
+                $feature,
+                StaffAccess::ACTION_DELETE,
+                $record,
+            ));
+        }
     }
 }

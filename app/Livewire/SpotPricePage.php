@@ -2,10 +2,8 @@
 
 namespace App\Livewire;
 
-use App\Models\CurrencyRate;
-use App\Models\MetalPrice;
 use App\Models\Setting;
-use App\Services\PriceEngine\PriceCacheManager;
+use App\Services\Rates\RatesProvider;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -123,141 +121,17 @@ class SpotPricePage extends Component
      */
     private function loadPrices(): void
     {
-        $cacheManager = app(PriceCacheManager::class);
-        $allPrices = $cacheManager->getAllPrices();
+        $allPrices = app(RatesProvider::class)->getAllPrices();
 
-        $this->goldPrices = $allPrices['gold'] ?: $this->loadGoldFromDatabase();
-        $this->silverPrices = $allPrices['silver'] ?: $this->loadSilverFromDatabase();
-        $this->internationalRates = $allPrices['international'] ?: $this->loadInternationalFromDatabase();
-        $this->currencyRates = $allPrices['currencies'] ?: $this->loadCurrenciesFromDatabase();
+        $this->goldPrices = $allPrices['gold'] ?: [];
+        $this->silverPrices = $allPrices['silver'] ?: [];
+        $this->internationalRates = $allPrices['international'] ?: [];
+        $this->currencyRates = $allPrices['currencies'] ?: [];
         $this->platinumRates = $allPrices['platinum'] ?: [];
         $this->palladiumRates = $allPrices['palladium'] ?: [];
         $this->crudeOilPrice = $allPrices['crude_oil'] ?: 0;
         $this->psxData = $allPrices['psx'] ?: [];
         $this->lastUpdated = $allPrices['last_updated'];
-    }
-
-    /**
-     * Fallback: load latest gold prices from the database if cache is empty.
-     */
-    private function loadGoldFromDatabase(): array
-    {
-        $goldData = [];
-
-        // Get the most recent fetched_at timestamp for gold
-        $latestGold = MetalPrice::gold()->orderByDesc('fetched_at')->first();
-
-        if (!$latestGold) {
-            return $goldData;
-        }
-
-        $prices = MetalPrice::gold()
-            ->where('fetched_at', $latestGold->fetched_at)
-            ->get();
-
-        foreach ($prices as $price) {
-            $goldData[$price->karat][$price->unit] = [
-                'buy' => (float) $price->buy_price,
-                'sell' => (float) $price->sell_price,
-            ];
-        }
-
-        return $goldData;
-    }
-
-    /**
-     * Fallback: load latest silver prices from the database if cache is empty.
-     */
-    private function loadSilverFromDatabase(): array
-    {
-        $silverData = [];
-
-        $latestSilver = MetalPrice::silver()->orderByDesc('fetched_at')->first();
-
-        if (!$latestSilver) {
-            return $silverData;
-        }
-
-        $prices = MetalPrice::silver()
-            ->where('fetched_at', $latestSilver->fetched_at)
-            ->get();
-
-        foreach ($prices as $price) {
-            $silverData[$price->unit] = [
-                'buy' => (float) $price->buy_price,
-                'sell' => (float) $price->sell_price,
-            ];
-        }
-
-        return $silverData;
-    }
-
-    /**
-     * Fallback: load latest currency rates from the database if cache is empty.
-     * Returns data in buy/sell format.
-     */
-    private function loadCurrenciesFromDatabase(): array
-    {
-        $currencyData = [];
-
-        $latestRate = CurrencyRate::orderByDesc('fetched_at')->first();
-
-        if (!$latestRate) {
-            return $currencyData;
-        }
-
-        $rates = CurrencyRate::where('fetched_at', $latestRate->fetched_at)->get();
-
-        // Map currency_pair labels back to cache keys
-        $pairToKey = [
-            'USD/PKR' => 'usd_pkr',
-            'USD Interbank' => 'usd_interbank',
-            'GBP/PKR' => 'gbp_pkr',
-            'EUR/PKR' => 'eur_pkr',
-            'SAR/PKR' => 'sar_pkr',
-            'AED/PKR' => 'aed_pkr',
-            'MYR/PKR' => 'myr_pkr',
-        ];
-
-        foreach ($rates as $rate) {
-            $key = $pairToKey[$rate->currency_pair] ?? null;
-            if ($key) {
-                $currencyData[$key] = [
-                    'buy' => (float) $rate->buy_rate,
-                    'sell' => (float) $rate->sell_rate,
-                ];
-            }
-        }
-
-        return $currencyData;
-    }
-
-    /**
-     * Fallback: load international rates from the database if cache is empty.
-     */
-    private function loadInternationalFromDatabase(): array
-    {
-        $data = [];
-
-        $latestGoldIntl = MetalPrice::where('metal', 'gold')
-            ->where('type', 'international')
-            ->orderByDesc('fetched_at')
-            ->first();
-
-        if ($latestGoldIntl) {
-            $data['xau_usd'] = (float) $latestGoldIntl->buy_price;
-        }
-
-        $latestSilverIntl = MetalPrice::where('metal', 'silver')
-            ->where('type', 'international')
-            ->orderByDesc('fetched_at')
-            ->first();
-
-        if ($latestSilverIntl) {
-            $data['xag_usd'] = (float) $latestSilverIntl->buy_price;
-        }
-
-        return $data;
     }
 
     /**

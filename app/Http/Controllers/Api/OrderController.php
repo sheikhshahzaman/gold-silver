@@ -11,7 +11,7 @@ use App\Models\Setting;
 use App\Services\Cart;
 use App\Services\Orders\OrderNotificationService;
 use App\Services\Orders\OrderPricingService;
-use App\Services\PriceEngine\PriceCacheManager;
+use App\Services\Rates\RatesProvider;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -100,7 +100,7 @@ class OrderController extends Controller
      * but the unit price is ALWAYS re-derived server-side from the live price
      * cache — the client only sends the selection, never the price.
      */
-    public function storeMetalOrder(Request $request, PriceCacheManager $cacheManager): JsonResponse
+    public function storeMetalOrder(Request $request, RatesProvider $rates): JsonResponse
     {
         $data = $request->validate([
             'customer_name' => 'required|string|min:2|max:255',
@@ -128,7 +128,7 @@ class OrderController extends Controller
             return response()->json(['message' => 'Invalid silver selection.'], 422);
         }
 
-        $prices = $cacheManager->getAllPrices();
+        $prices = $rates->getAllPrices();
         $unitPrice = $this->resolveMetalUnitPrice($prices, $data['metal'], $karat, $data['unit'], $data['type']);
 
         if ($unitPrice === null || $unitPrice <= 0) {

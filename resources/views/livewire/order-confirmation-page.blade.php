@@ -52,6 +52,27 @@
         @endif
     </div>
 
+    <div class="glass-card p-5 mb-4">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+                <p class="text-xs uppercase tracking-widest mb-1" style="color: #8B6914;">Order ID</p>
+                <p class="font-mono text-lg font-bold break-all" style="color: #0A2E23;">{{ $order->order_number }}</p>
+            </div>
+            <button type="button"
+                onclick="
+                    navigator.clipboard.writeText(@js($order->order_number));
+                    const label = this.querySelector('[data-copy-label]');
+                    label.textContent = 'Copied';
+                    setTimeout(() => label.textContent = 'Copy ID', 1600);
+                "
+                class="px-4 py-2 rounded-full text-sm font-semibold"
+                style="background: #0A2E23; color: #E8C96A;">
+                <span data-copy-label>Copy ID</span>
+            </button>
+        </div>
+        <p class="text-sm mt-3" style="color: #6B6B6B;">Copy this order ID. You can use it on the Track Order page to verify the latest status anytime.</p>
+    </div>
+
     {{-- Order Details --}}
     <div class="glass-card p-5 mb-4">
         <h3 class="font-semibold mb-3" style="color: #0A2E23;">Order Details</h3>

@@ -3,7 +3,7 @@
 namespace App\Livewire;
 
 use App\Models\InventoryItem;
-use App\Services\PriceEngine\PriceCacheManager;
+use App\Services\Rates\RatesProvider;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
@@ -47,7 +47,7 @@ class VerifyItemPage extends Component
         $prices = [];
         if ($this->item && $this->item->product && $this->item->product->price_key) {
             try {
-                $allPrices = app(PriceCacheManager::class)->getAllPrices();
+                $allPrices = app(RatesProvider::class)->getAllPrices();
                 $keys = explode('.', $this->item->product->price_key);
                 $current = $allPrices;
                 foreach ($keys as $key) {

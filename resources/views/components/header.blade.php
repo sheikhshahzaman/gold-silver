@@ -40,6 +40,7 @@
                     $navItems = [
                         ['route' => 'home', 'href' => '/', 'label' => 'Home'],
                         ['route' => 'products', 'href' => '/products', 'label' => 'Products'],
+                        ['route' => 'buy.calculator', 'href' => '/buy-calculator', 'label' => 'Buy Calculator'],
                         ['route' => 'page.about-us', 'href' => '/about-us', 'label' => 'About Us'],
                         ['route' => 'contact', 'href' => '/contact', 'label' => 'Contact'],
                     ];

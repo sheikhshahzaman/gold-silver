@@ -3,6 +3,7 @@
 namespace App\Providers\Filament;
 
 use App\Auth\MultiFactor\WhatsAppAuthentication;
+use App\Http\Middleware\EnsureStaffCanAccessAdminFeature;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -58,6 +59,7 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->authMiddleware([
                 Authenticate::class,
+                EnsureStaffCanAccessAdminFeature::class,
             ]);
     }
 }

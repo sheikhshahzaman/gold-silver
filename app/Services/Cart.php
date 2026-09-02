@@ -4,7 +4,7 @@ namespace App\Services;
 
 use App\Models\CartItem;
 use App\Models\Product;
-use App\Services\PriceEngine\PriceCacheManager;
+use App\Services\Rates\RatesProvider;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
@@ -99,7 +99,7 @@ class Cart
 
     private function priceMatrix(): array
     {
-        return self::$priceMatrixMemo ??= app(PriceCacheManager::class)->getAllPrices();
+        return self::$priceMatrixMemo ??= app(RatesProvider::class)->getAllPrices();
     }
 
     /** @internal test hook — clears the per-request memo */

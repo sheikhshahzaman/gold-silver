@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Filament\Concerns\RequiresStaffPermission;
 use App\Models\Setting;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -18,8 +19,11 @@ use Livewire\WithFileUploads;
 
 class SiteSettings extends Page implements HasForms
 {
+    use RequiresStaffPermission;
     use InteractsWithForms;
     use WithFileUploads;
+
+    protected static string $staffFeature = 'site_settings';
 
     protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-paint-brush';
 
@@ -129,6 +133,8 @@ class SiteSettings extends Page implements HasForms
 
     public function saveLogo(): void
     {
+        $this->ensureCanEdit();
+
         $this->validate([
             'logoUpload' => 'required|image|max:1024',
         ]);
@@ -151,6 +157,8 @@ class SiteSettings extends Page implements HasForms
 
     public function removeLogo(): void
     {
+        $this->ensureCanEdit();
+
         $oldLogo = Setting::get('site_logo');
         if ($oldLogo && Storage::disk('public')->exists($oldLogo)) {
             Storage::disk('public')->delete($oldLogo);
@@ -165,6 +173,8 @@ class SiteSettings extends Page implements HasForms
 
     public function save(): void
     {
+        $this->ensureCanEdit();
+
         $data = $this->form->getState();
 
         if (isset($data['site_name'])) {

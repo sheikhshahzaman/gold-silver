@@ -11,8 +11,16 @@
             <div class="flex flex-col sm:flex-row gap-3">
                 <input
                     type="text"
-                    wire:model="orderNumber"
+                    wire:model.live.debounce.200ms="orderNumber"
                     placeholder="ORD-XXXXXXXX-0000000000"
+                    autocomplete="off"
+                    inputmode="text"
+                    oninput="
+                        const body = this.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().replace(/^ORD/, '').slice(0, 18);
+                        const first = body.slice(0, 8);
+                        const second = body.slice(8, 18);
+                        this.value = body ? `ORD-${first}${second ? `-${second}` : ''}` : '';
+                    "
                     class="flex-1 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-gold/30"
                     style="background: #F7F2EA; border: 1px solid #E8DFD0; color: #0A2E23;"
                 >

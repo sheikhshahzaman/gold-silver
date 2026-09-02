@@ -5,7 +5,7 @@ namespace App\Livewire;
 use App\Models\Product;
 use App\Models\ProductCategory;
 use App\Services\Cart;
-use App\Services\PriceEngine\PriceCacheManager;
+use App\Services\Rates\RatesProvider;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -45,8 +45,7 @@ class ProductsPage extends Component
 
     public function refreshPrices(): void
     {
-        $cacheManager = app(PriceCacheManager::class);
-        $allPrices = $cacheManager->getAllPrices();
+        $allPrices = app(RatesProvider::class)->getAllPrices();
         $this->goldPrices = $allPrices['gold'] ?: [];
         $this->silverPrices = $allPrices['silver'] ?: [];
     }

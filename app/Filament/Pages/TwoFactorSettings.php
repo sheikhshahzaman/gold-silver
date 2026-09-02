@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Filament\Concerns\RequiresStaffPermission;
 use App\Models\Setting;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\TagsInput;
@@ -17,7 +18,10 @@ use Illuminate\Support\HtmlString;
 
 class TwoFactorSettings extends Page implements HasForms
 {
+    use RequiresStaffPermission;
     use InteractsWithForms;
+
+    protected static string $staffFeature = 'two_factor_settings';
 
     protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-shield-check';
 
@@ -101,6 +105,8 @@ class TwoFactorSettings extends Page implements HasForms
 
     public function save(): void
     {
+        $this->ensureCanEdit();
+
         $data = $this->form->getState();
 
         Setting::set('two_factor_enabled', ($data['two_factor_enabled'] ?? false) ? '1' : '0');

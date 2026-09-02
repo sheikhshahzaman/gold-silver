@@ -6,6 +6,7 @@ use App\Filament\Resources\InventoryItemResource;
 use App\Models\InventoryItem;
 use App\Models\Product;
 use App\Services\QrPdfGenerator;
+use App\Support\StaffAccess;
 use Filament\Actions;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -24,6 +25,7 @@ class ListInventoryItems extends ListRecords
                 ->label('Generate Items')
                 ->icon('heroicon-o-plus-circle')
                 ->color('primary')
+                ->visible(fn (): bool => StaffAccess::can('inventory_items', StaffAccess::ACTION_CREATE))
                 ->form([
                     Select::make('product_id')
                         ->label('Product')

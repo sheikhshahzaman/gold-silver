@@ -40,4 +40,30 @@ return [
         'to' => env('ORDER_SMS_TO'),
     ],
 
+    'rates' => [
+        'source' => env('RATES_SOURCE', 'local'),
+        'url' => env('RATES_API_URL'),
+        'token' => env('RATES_API_TOKEN'),
+        'host_header' => env('RATES_API_HOST_HEADER'),
+        'verify_ssl' => env('RATES_API_VERIFY_SSL', true),
+        'timeout' => env('RATES_API_TIMEOUT', 8),
+        'cache_ttl' => env('RATES_API_CACHE_TTL', 10),
+        'stale_ttl' => env('RATES_API_STALE_TTL', 300),
+    ],
+
+    'price_margin_sync' => [
+        'url' => env('PRICE_MARGIN_SYNC_URL'),
+        'token' => env('PRICE_MARGIN_SYNC_TOKEN'),
+        'host_header' => env('PRICE_MARGIN_SYNC_HOST_HEADER'),
+        'verify_ssl' => env('PRICE_MARGIN_SYNC_VERIFY_SSL', true),
+        'timeout' => env('PRICE_MARGIN_SYNC_TIMEOUT', 10),
+    ],
+
+    'api_proxy' => [
+        'base_url' => env('API_PROXY_BASE_URL'),
+        'forwarded_host' => env('API_PROXY_FORWARDED_HOST', 'islamabadbullionexchange.com'),
+        'verify_ssl' => env('API_PROXY_VERIFY_SSL', true),
+        'timeout' => env('API_PROXY_TIMEOUT', 20),
+    ],
+
 ];

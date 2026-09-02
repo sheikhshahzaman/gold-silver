@@ -2,8 +2,7 @@
 
 namespace App\Livewire;
 
-use App\Models\MetalPrice;
-use App\Services\PriceEngine\PriceCacheManager;
+use App\Services\Rates\RatesProvider;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -37,11 +36,10 @@ class ZakatCalculatorPage extends Component
      */
     private function loadPrices(): void
     {
-        $cacheManager = app(PriceCacheManager::class);
-        $allPrices = $cacheManager->getAllPrices();
+        $allPrices = app(RatesProvider::class)->getAllPrices();
 
-        $goldData = $allPrices['gold'] ?: $this->loadGoldFromDatabase();
-        $silverData = $allPrices['silver'] ?: $this->loadSilverFromDatabase();
+        $goldData = $allPrices['gold'] ?: [];
+        $silverData = $allPrices['silver'] ?: [];
         $this->lastUpdated = $allPrices['last_updated'];
 
         // Extract per-gram buy/sell prices for each karat
@@ -61,60 +59,6 @@ class ZakatCalculatorPage extends Component
             'buy' => $silverData['gram']['buy'] ?? 0,
             'sell' => $silverData['gram']['sell'] ?? 0,
         ];
-    }
-
-    /**
-     * Fallback: load latest gold prices from the database.
-     */
-    private function loadGoldFromDatabase(): array
-    {
-        $goldData = [];
-
-        $latestGold = MetalPrice::gold()->orderByDesc('fetched_at')->first();
-
-        if (! $latestGold) {
-            return $goldData;
-        }
-
-        $prices = MetalPrice::gold()
-            ->where('fetched_at', $latestGold->fetched_at)
-            ->get();
-
-        foreach ($prices as $price) {
-            $goldData[$price->karat][$price->unit] = [
-                'buy' => (float) $price->buy_price,
-                'sell' => (float) $price->sell_price,
-            ];
-        }
-
-        return $goldData;
-    }
-
-    /**
-     * Fallback: load latest silver prices from the database.
-     */
-    private function loadSilverFromDatabase(): array
-    {
-        $silverData = [];
-
-        $latestSilver = MetalPrice::silver()->orderByDesc('fetched_at')->first();
-
-        if (! $latestSilver) {
-            return $silverData;
-        }
-
-        $prices = MetalPrice::silver()
-            ->where('fetched_at', $latestSilver->fetched_at)
-            ->get();
-
-        foreach ($prices as $price) {
-            $silverData[$price->unit] = [
-                'buy' => (float) $price->buy_price,
-                'sell' => (float) $price->sell_price,
-            ];
-        }
-
-        return $silverData;
     }
 
     public function render()

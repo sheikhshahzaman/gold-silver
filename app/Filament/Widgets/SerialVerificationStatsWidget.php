@@ -3,6 +3,7 @@
 namespace App\Filament\Widgets;
 
 use App\Models\SerialVerificationAttempt;
+use App\Support\StaffAccess;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
@@ -11,6 +12,13 @@ class SerialVerificationStatsWidget extends StatsOverviewWidget
     protected static ?int $sort = 0;
 
     protected ?string $pollingInterval = '60s';
+
+    public static function canView(): bool
+    {
+        return StaffAccess::can('dashboard', StaffAccess::ACTION_VIEW)
+            || StaffAccess::can('serial_attempts', StaffAccess::ACTION_VIEW)
+            || StaffAccess::can('verified_serials', StaffAccess::ACTION_VIEW);
+    }
 
     protected function getStats(): array
     {

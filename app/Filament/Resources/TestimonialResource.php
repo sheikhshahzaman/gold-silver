@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\TestimonialResource\Pages;
 use App\Models\Testimonial;
+use App\Support\StaffAccess;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -84,13 +85,13 @@ class TestimonialResource extends Resource
                     ->label('Approve')
                     ->icon('heroicon-o-check-circle')
                     ->color('success')
-                    ->visible(fn (Testimonial $record): bool => $record->status !== Testimonial::STATUS_APPROVED)
+                    ->visible(fn (Testimonial $record): bool => $record->status !== Testimonial::STATUS_APPROVED && StaffAccess::can('testimonials', StaffAccess::ACTION_EDIT))
                     ->action(fn (Testimonial $record) => $record->update(['status' => Testimonial::STATUS_APPROVED])),
                 Action::make('reject')
                     ->label('Reject')
                     ->icon('heroicon-o-x-circle')
                     ->color('danger')
-                    ->visible(fn (Testimonial $record): bool => $record->status !== Testimonial::STATUS_REJECTED)
+                    ->visible(fn (Testimonial $record): bool => $record->status !== Testimonial::STATUS_REJECTED && StaffAccess::can('testimonials', StaffAccess::ACTION_EDIT))
                     ->requiresConfirmation()
                     ->action(fn (Testimonial $record) => $record->update(['status' => Testimonial::STATUS_REJECTED])),
                 EditAction::make(),
@@ -102,11 +103,13 @@ class TestimonialResource extends Resource
                         ->label('Approve selected')
                         ->icon('heroicon-o-check-circle')
                         ->color('success')
+                        ->visible(fn (): bool => StaffAccess::can('testimonials', StaffAccess::ACTION_EDIT))
                         ->action(fn (Collection $records) => $records->each->update(['status' => Testimonial::STATUS_APPROVED])),
                     BulkAction::make('reject')
                         ->label('Reject selected')
                         ->icon('heroicon-o-x-circle')
                         ->color('danger')
+                        ->visible(fn (): bool => StaffAccess::can('testimonials', StaffAccess::ACTION_EDIT))
                         ->requiresConfirmation()
                         ->action(fn (Collection $records) => $records->each->update(['status' => Testimonial::STATUS_REJECTED])),
                     DeleteBulkAction::make(),

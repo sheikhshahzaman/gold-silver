@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\PaymentResource\Pages;
 use App\Models\Order;
 use App\Models\Payment;
+use App\Support\StaffAccess;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -182,7 +183,7 @@ class PaymentResource extends Resource
                     ->requiresConfirmation()
                     ->modalHeading('Verify Payment')
                     ->modalDescription('Are you sure you want to verify this payment?')
-                    ->visible(fn (Payment $record): bool => $record->status === 'pending')
+                    ->visible(fn (Payment $record): bool => $record->status === 'pending' && StaffAccess::can('payments', StaffAccess::ACTION_EDIT))
                     ->action(function (Payment $record): void {
                         DB::transaction(function () use ($record) {
                             $record->update([
@@ -202,7 +203,7 @@ class PaymentResource extends Resource
                     ->requiresConfirmation()
                     ->modalHeading('Reject Payment')
                     ->modalDescription('Are you sure you want to reject this payment?')
-                    ->visible(fn (Payment $record): bool => $record->status === 'pending')
+                    ->visible(fn (Payment $record): bool => $record->status === 'pending' && StaffAccess::can('payments', StaffAccess::ACTION_EDIT))
                     ->action(function (Payment $record): void {
                         DB::transaction(function () use ($record) {
                             $record->update([

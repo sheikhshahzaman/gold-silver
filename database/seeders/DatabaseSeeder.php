@@ -14,12 +14,17 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->call([
+        $seeders = [
             AdminUserSeeder::class,
-            PriceMarginSeeder::class,
             SettingsSeeder::class,
             PageSeeder::class,
             NewsTickerSeeder::class,
-        ]);
+        ];
+
+        if (class_exists(\App\Models\PriceMargin::class) && class_exists(PriceMarginSeeder::class)) {
+            array_splice($seeders, 1, 0, [PriceMarginSeeder::class]);
+        }
+
+        $this->call($seeders);
     }
 }

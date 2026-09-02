@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\ContactResource\Pages;
 use App\Models\Contact;
+use App\Support\StaffAccess;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
 use Filament\Actions\ViewAction;
@@ -109,7 +110,7 @@ class ContactResource extends Resource
                     ->label('Mark as Read')
                     ->icon('heroicon-o-check')
                     ->color('success')
-                    ->visible(fn (Contact $record): bool => ! $record->is_read)
+                    ->visible(fn (Contact $record): bool => ! $record->is_read && StaffAccess::can('contact_messages', StaffAccess::ACTION_EDIT))
                     ->action(function (Contact $record): void {
                         $record->update(['is_read' => true]);
                     }),
@@ -117,7 +118,7 @@ class ContactResource extends Resource
                     ->label('Mark as Unread')
                     ->icon('heroicon-o-envelope')
                     ->color('warning')
-                    ->visible(fn (Contact $record): bool => $record->is_read)
+                    ->visible(fn (Contact $record): bool => $record->is_read && StaffAccess::can('contact_messages', StaffAccess::ACTION_EDIT))
                     ->action(function (Contact $record): void {
                         $record->update(['is_read' => false]);
                     }),
@@ -126,6 +127,7 @@ class ContactResource extends Resource
                 BulkAction::make('markAsRead')
                     ->label('Mark as Read')
                     ->icon('heroicon-o-check')
+                    ->visible(fn (): bool => StaffAccess::can('contact_messages', StaffAccess::ACTION_EDIT))
                     ->action(fn ($records) => $records->each->update(['is_read' => true])),
             ]);
     }

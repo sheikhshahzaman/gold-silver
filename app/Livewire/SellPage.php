@@ -2,10 +2,8 @@
 
 namespace App\Livewire;
 
-use App\Models\MetalPrice;
 use App\Models\Order;
-use App\Services\PriceEngine\PriceCacheManager;
-use App\Services\PriceEngine\PriceCalculator;
+use App\Services\Rates\RatesProvider;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -203,64 +201,11 @@ class SellPage extends Component
      */
     private function loadPrices(): void
     {
-        $cacheManager = app(PriceCacheManager::class);
-        $allPrices = $cacheManager->getAllPrices();
+        $allPrices = app(RatesProvider::class)->getAllPrices();
 
-        $this->goldPrices = $allPrices['gold'] ?: $this->loadGoldFromDatabase();
-        $this->silverPrices = $allPrices['silver'] ?: $this->loadSilverFromDatabase();
+        $this->goldPrices = $allPrices['gold'] ?: [];
+        $this->silverPrices = $allPrices['silver'] ?: [];
         $this->lastUpdated = $allPrices['last_updated'];
-    }
-
-    /**
-     * Fallback: load latest gold prices from database.
-     */
-    private function loadGoldFromDatabase(): array
-    {
-        $goldData = [];
-        $latestGold = MetalPrice::gold()->orderByDesc('fetched_at')->first();
-
-        if (!$latestGold) {
-            return $goldData;
-        }
-
-        $prices = MetalPrice::gold()
-            ->where('fetched_at', $latestGold->fetched_at)
-            ->get();
-
-        foreach ($prices as $price) {
-            $goldData[$price->karat][$price->unit] = [
-                'buy' => (float) $price->buy_price,
-                'sell' => (float) $price->sell_price,
-            ];
-        }
-
-        return $goldData;
-    }
-
-    /**
-     * Fallback: load latest silver prices from database.
-     */
-    private function loadSilverFromDatabase(): array
-    {
-        $silverData = [];
-        $latestSilver = MetalPrice::silver()->orderByDesc('fetched_at')->first();
-
-        if (!$latestSilver) {
-            return $silverData;
-        }
-
-        $prices = MetalPrice::silver()
-            ->where('fetched_at', $latestSilver->fetched_at)
-            ->get();
-
-        foreach ($prices as $price) {
-            $silverData[$price->unit] = [
-                'buy' => (float) $price->buy_price,
-                'sell' => (float) $price->sell_price,
-            ];
-        }
-
-        return $silverData;
     }
 
     public function placeOrder()

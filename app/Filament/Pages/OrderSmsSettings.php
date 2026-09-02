@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Filament\Concerns\RequiresStaffPermission;
 use App\Models\Setting;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Textarea;
@@ -19,7 +20,10 @@ use Illuminate\Support\HtmlString;
 
 class OrderSmsSettings extends Page implements HasForms
 {
+    use RequiresStaffPermission;
     use InteractsWithForms;
+
+    protected static string $staffFeature = 'sms_settings';
 
     protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-chat-bubble-left-right';
 
@@ -104,6 +108,8 @@ class OrderSmsSettings extends Page implements HasForms
 
     public function save(): void
     {
+        $this->ensureCanEdit();
+
         $data = $this->form->getState();
 
         Setting::set('order_sms_enabled', ($data['order_sms_enabled'] ?? false) ? '1' : '0');
@@ -120,6 +126,8 @@ class OrderSmsSettings extends Page implements HasForms
 
     public function sendTest(): void
     {
+        $this->ensureCanEdit();
+
         $data = $this->form->getState();
         $url = trim((string) ($data['order_sms_webhook_url'] ?? ''));
 

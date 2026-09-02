@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Filament\Concerns\RequiresStaffPermission;
 use App\Models\Setting;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms;
@@ -13,7 +14,10 @@ use Filament\Schemas\Schema;
 
 class PaymentSettings extends Page implements HasForms
 {
+    use RequiresStaffPermission;
     use InteractsWithForms;
+
+    protected static string $staffFeature = 'payment_settings';
 
     protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-cog-6-tooth';
 
@@ -101,6 +105,8 @@ class PaymentSettings extends Page implements HasForms
 
     public function save(): void
     {
+        $this->ensureCanEdit();
+
         $data = $this->form->getState();
 
         foreach ($data as $key => $value) {

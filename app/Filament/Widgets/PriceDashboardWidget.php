@@ -5,6 +5,7 @@ namespace App\Filament\Widgets;
 use App\Models\MetalPrice;
 use App\Models\Order;
 use App\Models\Payment;
+use App\Support\StaffAccess;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
@@ -13,6 +14,14 @@ class PriceDashboardWidget extends StatsOverviewWidget
     protected static ?int $sort = -2;
 
     protected ?string $pollingInterval = '60s';
+
+    public static function canView(): bool
+    {
+        return StaffAccess::can('dashboard', StaffAccess::ACTION_VIEW)
+            || StaffAccess::can('price_margins', StaffAccess::ACTION_VIEW)
+            || StaffAccess::can('orders', StaffAccess::ACTION_VIEW)
+            || StaffAccess::can('payments', StaffAccess::ACTION_VIEW);
+    }
 
     protected function getStats(): array
     {
