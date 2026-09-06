@@ -2,14 +2,18 @@
 
 namespace App\Models;
 
+use App\Support\OrderNumber;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
-use Illuminate\Support\Str;
 
 class Order extends Model
 {
+    public const SOURCE_WEBSITE = 'website';
+
+    public const SOURCE_APP = 'app';
+
     public const STATUS_PENDING = 'pending';
     public const STATUS_CONFIRMED = 'confirmed';
     public const STATUS_DISPATCHED = 'dispatched';
@@ -27,6 +31,8 @@ class Order extends Model
         'customer_phone',
         'customer_email',
         'order_number',
+        'source',
+        'submitted_at',
         'metal',
         'karat',
         'quantity',
@@ -48,6 +54,7 @@ class Order extends Model
     protected function casts(): array
     {
         return [
+            'submitted_at' => 'datetime',
             'quantity' => 'decimal:4',
             'locked_price' => 'decimal:2',
             'total_amount' => 'decimal:2',
@@ -62,6 +69,36 @@ class Order extends Model
     public function getGrandTotalAttribute(): float
     {
         return (float) $this->total_amount + (float) $this->delivery_charge;
+    }
+
+    /** Only orders the customer actually completed. Drafts stay hidden. */
+    public function scopeSubmitted($query)
+    {
+        return $query->whereNotNull('submitted_at');
+    }
+
+    public function isSubmitted(): bool
+    {
+        return $this->submitted_at !== null;
+    }
+
+    /** Marks checkout complete. Idempotent, so a double tap cannot re-stamp it. */
+    public function markSubmitted(): static
+    {
+        if (! $this->isSubmitted()) {
+            $this->forceFill(['submitted_at' => now()])->save();
+        }
+
+        return $this;
+    }
+
+    /** Human labels for where an order was placed. */
+    public static function sourceOptions(): array
+    {
+        return [
+            self::SOURCE_WEBSITE => 'Website',
+            self::SOURCE_APP => 'Mobile App',
+        ];
     }
 
     public static function statusOptions(): array
@@ -184,7 +221,7 @@ class Order extends Model
 
         static::creating(function (Order $order) {
             if (empty($order->order_number)) {
-                $order->order_number = 'ORD-' . strtoupper(Str::random(8)) . '-' . time();
+                $order->order_number = OrderNumber::generate();
             }
         });
     }

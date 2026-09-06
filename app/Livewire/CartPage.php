@@ -76,6 +76,7 @@ class CartPage extends Component
 
         $order = DB::transaction(function () use ($items, $subtotal) {
             $order = Order::create([
+                'source' => Order::SOURCE_WEBSITE,
                 // Guard against a stale session id for a deleted user —
                 // auth()->id() can be non-null while auth()->check() is false,
                 // which would fail the orders.user_id foreign key.

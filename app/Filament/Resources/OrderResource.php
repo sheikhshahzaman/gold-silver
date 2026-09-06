@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\OrderResource\Pages;
 use App\Models\Order;
+use App\Models\Payment;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Infolists\Components\IconEntry;
@@ -11,6 +12,7 @@ use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Illuminate\Database\Eloquent\Builder;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -31,12 +33,29 @@ class OrderResource extends Resource
 
     protected static ?string $navigationLabel = 'Orders';
 
+    /**
+     * Only orders the customer actually completed.
+     *
+     * Checkout creates a working draft so prices can be locked server-side, but
+     * a draft is not an order: cash/COD orders are submitted at the payment
+     * step, bank transfers once the screenshot is uploaded. Abandoned drafts
+     * never reach this list.
+     */
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->whereNotNull('submitted_at');
+    }
+
     public static function form(Schema $schema): Schema
     {
         return $schema
             ->components([
                 Section::make('Customer Information')
                     ->schema([
+                        TextInput::make('source')
+                            ->label('Placed From')
+                            ->formatStateUsing(fn (?string $state): string => Order::sourceOptions()[$state] ?? 'Website')
+                            ->disabled(),
                         TextInput::make('customer_name')
                             ->label('Customer Name')
                             ->disabled(),
@@ -187,6 +206,19 @@ class OrderResource extends Resource
                     ->label('Order Number')
                     ->searchable()
                     ->sortable(),
+                Tables\Columns\TextColumn::make('source')
+                    ->label('Placed From')
+                    ->badge()
+                    ->icon(fn (?string $state): string => match ($state) {
+                        Order::SOURCE_APP => 'heroicon-m-device-phone-mobile',
+                        default => 'heroicon-m-globe-alt',
+                    })
+                    ->color(fn (?string $state): string => match ($state) {
+                        Order::SOURCE_APP => 'info',
+                        default => 'gray',
+                    })
+                    ->formatStateUsing(fn (?string $state): string => Order::sourceOptions()[$state] ?? 'Website')
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('customer_name')
                     ->label('Customer')
                     ->searchable()
@@ -232,6 +264,16 @@ class OrderResource extends Resource
                     })
                     ->formatStateUsing(fn (string $state): string => ucfirst($state))
                     ->sortable(),
+                Tables\Columns\TextColumn::make('payment.method')
+                    ->label('Payment')
+                    ->badge()
+                    ->color(fn (?string $state): string => match ($state) {
+                        Payment::METHOD_BANK_TRANSFER => 'warning',
+                        Payment::METHOD_CASH, Payment::METHOD_COD => 'success',
+                        default => 'gray',
+                    })
+                    ->formatStateUsing(fn (?string $state): string => Payment::methodOptions()[$state] ?? '-')
+                    ->placeholder('-'),
                 Tables\Columns\TextColumn::make('total_amount')
                     ->label('Total Amount')
                     ->money('PKR')
@@ -267,6 +309,15 @@ class OrderResource extends Resource
                         'buy' => 'Buy',
                         'sell' => 'Sell',
                     ]),
+                Tables\Filters\SelectFilter::make('source')
+                    ->label('Placed From')
+                    ->options(Order::sourceOptions()),
+                Tables\Filters\SelectFilter::make('payment_method')
+                    ->label('Payment Method')
+                    ->options(Payment::methodOptions())
+                    ->query(fn (Builder $query, array $data): Builder => filled($data['value'] ?? null)
+                        ? $query->whereHas('payment', fn (Builder $q) => $q->where('method', $data['value']))
+                        : $query),
             ])
             ->actions([
                 ViewAction::make(),

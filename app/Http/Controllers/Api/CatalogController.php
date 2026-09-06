@@ -34,6 +34,9 @@ class CatalogController extends Controller
             'metal' => $p->metal,
             'karat' => $p->karat,
             'image' => $p->image ? url(Storage::url($p->image)) : null,
+            // Small version for list tiles; the app never draws these larger
+            // than 68px, so shipping the full picture wasted seconds.
+            'image_thumb' => $p->thumbnailUrl(),
             'category' => $p->productCategory ? [
                 'id' => $p->productCategory->id,
                 'name' => $p->productCategory->name,

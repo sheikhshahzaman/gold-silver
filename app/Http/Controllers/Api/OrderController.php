@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Order;
+use App\Support\OrderNumber;
 use App\Models\OrderItem;
 use App\Models\Payment;
 use App\Models\Product;
@@ -63,6 +64,7 @@ class OrderController extends Controller
         $order = DB::transaction(function () use ($data, $lines, $total) {
             $order = Order::create([
                 'type' => 'buy',
+                'source' => Order::SOURCE_APP,
                 'customer_name' => $data['customer_name'],
                 'customer_phone' => $data['customer_phone'],
                 'total_amount' => $total,
@@ -142,6 +144,7 @@ class OrderController extends Controller
 
         $order = Order::create([
             'type' => $data['type'],
+            'source' => Order::SOURCE_APP,
             'metal' => $data['metal'],
             'karat' => $karat,
             'quantity' => $quantity,
@@ -162,7 +165,7 @@ class OrderController extends Controller
     public function show(string $orderNumber): JsonResponse
     {
         $order = Order::with(['items.product', 'payment'])
-            ->where('order_number', $orderNumber)
+            ->where('order_number', OrderNumber::normalize($orderNumber))
             ->firstOrFail();
 
         if ($order->status === Order::STATUS_PENDING && ! $order->payment) {
@@ -181,19 +184,28 @@ class OrderController extends Controller
      */
     public function submitPayment(Request $request, string $orderNumber): JsonResponse
     {
-        $order = Order::with(['items.product', 'payment'])->where('order_number', $orderNumber)->firstOrFail();
+        $order = Order::with(['items.product', 'payment'])
+            ->where('order_number', OrderNumber::normalize($orderNumber))
+            ->firstOrFail();
 
         if ($order->payment) {
             return response()->json(['message' => 'Payment has already been submitted for this order.'], 409);
         }
 
         $data = $request->validate([
-            'method' => 'required|in:bank_transfer',
+            'method' => 'required|in:'.implode(',', array_keys(Payment::methodOptions())),
             'delivery_method' => 'required|in:pickup,delivery',
             'delivery_address' => 'required_if:delivery_method,delivery|nullable|string|max:1000',
-            'proof_image' => 'required|image|max:5120',
+            // Only a bank transfer has a screenshot. Cash and COD submit without one.
+            'proof_image' => [Payment::requiresProof($request->input('method')) ? 'required' : 'nullable', 'image', 'max:5120'],
             'reference_number' => 'nullable|string|max:255',
         ]);
+
+        if (! Payment::isValidForDelivery($data['method'], $data['delivery_method'])) {
+            return response()->json([
+                'message' => 'That payment method is not available for this delivery option.',
+            ], 422);
+        }
 
         $deliveryCharge = $data['delivery_method'] === 'delivery'
             ? (float) Setting::get('delivery_charge', 0)
@@ -207,7 +219,9 @@ class OrderController extends Controller
 
         $order = app(OrderPricingService::class)->refreshCartOrder($order);
 
-        $path = $request->file('proof_image')->store('payment-proofs', 'public');
+        $path = $request->hasFile('proof_image')
+            ? $request->file('proof_image')->store('payment-proofs', 'public')
+            : null;
 
         Payment::create([
             'order_id' => $order->id,
@@ -219,6 +233,10 @@ class OrderController extends Controller
         ]);
 
         $order->update(['status' => Order::STATUS_PENDING]);
+
+        // This is the moment the order becomes real and appears in admin.
+        $order->markSubmitted();
+
         app(OrderNotificationService::class)->notifyOrderSubmitted($order->fresh(['items', 'payment']));
 
         return response()->json(['order' => $this->orderPayload($order->fresh(['items', 'payment']))]);

@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Models\BuyRequest;
 use App\Models\Contact;
 use App\Models\HeroSlide;
 use App\Models\InventoryItem;
@@ -47,6 +48,7 @@ class StaffAccess
             'price_margins' => 'Gold & Silver Prices',
             'metal_prices' => 'Metal Prices',
             'contact_messages' => 'Contact Messages',
+            'buy_requests' => 'Buy Requests',
             'orders' => 'Orders',
             'payments' => 'Payments',
             'inventory_items' => 'Inventory Items',
@@ -106,6 +108,7 @@ class StaffAccess
             PriceMargin::class => 'price_margins',
             MetalPrice::class => 'metal_prices',
             Contact::class => 'contact_messages',
+            BuyRequest::class => 'buy_requests',
             Order::class => 'orders',
             Payment::class => 'payments',
             InventoryItem::class => 'inventory_items',

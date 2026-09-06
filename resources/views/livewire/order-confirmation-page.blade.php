@@ -161,7 +161,7 @@
             <div class="space-y-2 text-sm">
                 <div class="flex justify-between">
                     <span style="color: #888;">Method</span>
-                    <span class="font-medium" style="color: #0A2E23;">{{ ucfirst(str_replace('_', ' ', $order->payment->method)) }}</span>
+                    <span class="font-medium" style="color: #0A2E23;">{{ \App\Models\Payment::methodOptions()[$order->payment->method] ?? ucfirst(str_replace('_', ' ', $order->payment->method)) }}</span>
                 </div>
                 @if($order->payment->reference_number)
                     <div class="flex justify-between">

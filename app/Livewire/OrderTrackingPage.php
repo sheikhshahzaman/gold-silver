@@ -3,6 +3,7 @@
 namespace App\Livewire;
 
 use App\Models\Order;
+use App\Support\OrderNumber;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -61,19 +62,14 @@ class OrderTrackingPage extends Component
             ->first();
     }
 
+    /**
+     * Canonicalises whatever the customer typed. The IBE prefix is added
+     * automatically and everything is upper-cased, so lower case input and
+     * missing hyphens still find the order.
+     */
     private function formatOrderNumber(string $value): string
     {
-        $cleaned = preg_replace('/[^A-Za-z0-9]/', '', strtoupper($value)) ?? '';
-
-        if ($cleaned === '') {
-            return '';
-        }
-
-        $body = substr($cleaned, 0, 18);
-        $first = substr($body, 0, 8);
-        $second = substr($body, 8, 10);
-
-        return $first.($second !== '' ? '-'.$second : '');
+        return OrderNumber::normalize($value);
     }
 
     public function render()

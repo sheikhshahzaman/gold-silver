@@ -56,6 +56,29 @@ class CheckoutPage extends Component
     public function selectDeliveryMethod(string $method): void
     {
         $this->deliveryMethod = $method;
+
+        // Cash is pickup-only and COD is delivery-only, so switching delivery
+        // can invalidate the chosen payment method.
+        if (! Payment::isValidForDelivery($this->paymentMethod, $this->deliveryMethod)) {
+            $this->paymentMethod = Payment::METHOD_BANK_TRANSFER;
+        }
+    }
+
+    /** Payment methods offered for the current delivery choice. */
+    public function availablePaymentMethods(): array
+    {
+        return Payment::methodsForDelivery($this->deliveryMethod);
+    }
+
+    public function paymentMethodLabel(string $method): string
+    {
+        return Payment::methodOptions()[$method] ?? $method;
+    }
+
+    /** Only a bank transfer sends the customer to the screenshot step. */
+    public function needsProof(): bool
+    {
+        return Payment::requiresProof($this->paymentMethod);
     }
 
     /** Total the customer actually pays: product total + delivery (0 for pickup). */
@@ -95,13 +118,19 @@ class CheckoutPage extends Component
     public function goToStep3(): void
     {
         $this->validate([
-            'paymentMethod' => 'required|in:bank_transfer',
+            'paymentMethod' => 'required|in:'.implode(',', array_keys(Payment::methodOptions())),
             'deliveryMethod' => 'required|in:pickup,delivery',
             'deliveryAddress' => 'required_if:deliveryMethod,delivery|nullable|string|max:1000',
         ], [
             'paymentMethod.required' => 'Please select a payment method.',
             'deliveryAddress.required_if' => 'Please enter your delivery address.',
         ]);
+
+        if (! Payment::isValidForDelivery($this->paymentMethod, $this->deliveryMethod)) {
+            $this->addError('paymentMethod', 'That payment method is not available for this delivery option.');
+
+            return;
+        }
 
         $this->order->update([
             'delivery_method' => $this->deliveryMethod,
@@ -111,7 +140,45 @@ class CheckoutPage extends Component
 
         $this->refreshOrderPricing();
 
+        // Cash and COD have nothing to upload, so the order is complete here.
+        if (! Payment::requiresProof($this->paymentMethod)) {
+            $this->placeOrder();
+
+            return;
+        }
+
         $this->step = 3;
+    }
+
+    /**
+     * Completes a cash or COD order without a screenshot. This is the moment
+     * the order becomes real and appears in admin.
+     */
+    public function placeOrder(): void
+    {
+        if (Payment::requiresProof($this->paymentMethod)) {
+            return;
+        }
+
+        $this->refreshOrderPricing();
+
+        $order = $this->order->fresh();
+
+        Payment::create([
+            'order_id' => $order->id,
+            'method' => $this->paymentMethod,
+            'amount' => $order->grand_total,
+            'proof_image' => null,
+            'reference_number' => null,
+            'status' => 'pending',
+        ]);
+
+        $this->order->update(['status' => Order::STATUS_PENDING]);
+        $this->order->markSubmitted();
+
+        app(OrderNotificationService::class)->notifyOrderSubmitted($this->order->fresh(['items', 'payment']));
+
+        redirect()->route('order.show', $this->order->order_number);
     }
 
     public function goBackToStep1(): void
@@ -162,6 +229,8 @@ class CheckoutPage extends Component
         ]);
 
         $this->order->update(['status' => Order::STATUS_PENDING]);
+        $this->order->markSubmitted();
+
         app(OrderNotificationService::class)->notifyOrderSubmitted($this->order->fresh(['items', 'payment']));
 
         redirect()->route('order.show', $this->order->order_number);

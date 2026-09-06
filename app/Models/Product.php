@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\Media\ThumbnailGenerator;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -35,6 +36,30 @@ class Product extends Model
                 $product->slug = Str::slug($product->name);
             }
         });
+
+        // Keep a small thumbnail beside every uploaded picture.
+        static::saved(function (Product $product): void {
+            if ($product->wasChanged('image') && $product->image) {
+                ThumbnailGenerator::generate($product->image, force: true);
+            }
+        });
+    }
+
+    /**
+     * Small image for list tiles. Falls back to the original when a thumbnail
+     * has not been generated yet, so nothing ever renders blank.
+     */
+    public function thumbnailUrl(): ?string
+    {
+        if (! $this->image) {
+            return null;
+        }
+
+        $thumb = ThumbnailGenerator::pathFor($this->image);
+
+        return \Illuminate\Support\Facades\Storage::disk('public')->exists($thumb)
+            ? url(\Illuminate\Support\Facades\Storage::url($thumb))
+            : url(\Illuminate\Support\Facades\Storage::url($this->image));
     }
 
     public function productCategory(): BelongsTo

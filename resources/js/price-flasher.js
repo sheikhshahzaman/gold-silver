@@ -41,13 +41,24 @@ function jitterAmount(pkey, base) {
     if (pkey.startsWith('palladium-intl'))   return 1;
     if (pkey.startsWith('platinum-local'))   return 5;       // PKR local metals ±5
     if (pkey.startsWith('palladium-local'))  return 5;
-    if (pkey.startsWith('gold-'))            return 10;      // PKR gold ±10 Rs max
-    if (pkey.startsWith('silver-'))          return 10;      // PKR silver ±10 Rs max
+    // Admin-set gold/silver rates move within their last two digits only;
+    // applyJitter() locks everything above them. The range just has to be wide
+    // enough to reach across the block.
+    if (pkey.startsWith('gold-'))            return 99;
+    if (pkey.startsWith('silver-'))          return 99;
     if (pkey.startsWith('crude-oil'))        return 0.25;    // USD crude ±$0.25
     if (pkey.startsWith('psx-'))             return 10;      // PSX index ±10
     if (pkey.startsWith('currency-'))        return 0.10;    // PKR currencies ±0.10
     return 1;
 }
+
+// Rates the admin sets by hand, as opposed to international spot.
+function isLocalMetal(pkey) {
+    return pkey.startsWith('gold-') || pkey.startsWith('silver-');
+}
+
+// Below this the last two digits are too large a share of the value to move.
+const LAST_TWO_DIGITS_FLOOR = 1000;
 
 // ── Formatting helpers ───────────────────────────────────────────────
 
@@ -233,11 +244,32 @@ function applyJitter() {
         }
 
         let jittered = base + offset;
+
         // Spot gold/silver: only the cents move — clamp inside the same
         // dollar so the integer part of the price never changes on screen.
         if (pkey.startsWith('intl-xau') || pkey.startsWith('intl-xag')) {
             const dollars = Math.floor(base);
             jittered = Math.min(dollars + 0.99, Math.max(dollars, jittered));
+        }
+
+        // Admin-set PKR gold/silver rates: only the two digits BEFORE the
+        // decimal point move. Everything above them stays exactly as the admin
+        // set it, so Rs 456,999 ticks within Rs 456,900-456,999 and never
+        // misreads at a glance.
+        //
+        // The offset wraps inside the block rather than clamping, so the digits
+        // move evenly instead of piling up at the edges. A buy and its sell
+        // share one offset and sit in different blocks, so they can never
+        // cross. Below FLOOR the last two digits would be too large a share of
+        // the value, so those are left alone.
+        if (isLocalMetal(pkey)) {
+            if (base < LAST_TWO_DIGITS_FLOOR) {
+                jittered = base;
+            } else {
+                const block = Math.floor(base / 100) * 100;
+                const within = (((base - block) + Math.round(offset)) % 100 + 100) % 100;
+                jittered = block + within;
+            }
         }
         el.textContent = formatPrice(pkey, jittered);
 

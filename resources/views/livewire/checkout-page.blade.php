@@ -174,20 +174,30 @@
             </div>
 
             <div class="space-y-3">
-                {{-- Bank Transfer (only payment method offered) --}}
-                <button wire:click="selectPaymentMethod('bank_transfer')"
-                    class="glass-card w-full p-4 text-left transition-all duration-200 cursor-pointer {{ $paymentMethod === 'bank_transfer' ? '!border-gold' : '' }}">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-lg flex items-center justify-center font-bold text-sm" style="background: #0A2E23; color: white;">BT</div>
-                        <div class="flex-1">
-                            <p class="font-semibold" style="color: #0A2E23;">Bank Transfer</p>
-                            <p class="text-xs" style="color: #888;">Direct bank account transfer</p>
+                {{-- Cash is offered for pickup, COD for delivery. --}}
+                @php
+                    $methodMeta = [
+                        'bank_transfer' => ['BT', 'Direct bank account transfer'],
+                        'cash' => ['Rs', 'Pay in cash when you collect'],
+                        'cod' => ['Rs', 'Pay in cash when your order arrives'],
+                    ];
+                @endphp
+                @foreach($this->availablePaymentMethods() as $method)
+                    @php [$badge, $blurb] = $methodMeta[$method] ?? ['--', '']; @endphp
+                    <button wire:click="selectPaymentMethod('{{ $method }}')"
+                        class="glass-card w-full p-4 text-left transition-all duration-200 cursor-pointer {{ $paymentMethod === $method ? '!border-gold' : '' }}">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-lg flex items-center justify-center font-bold text-sm" style="background: #0A2E23; color: white;">{{ $badge }}</div>
+                            <div class="flex-1">
+                                <p class="font-semibold" style="color: #0A2E23;">{{ $this->paymentMethodLabel($method) }}</p>
+                                <p class="text-xs" style="color: #888;">{{ $blurb }}</p>
+                            </div>
+                            @if($paymentMethod === $method)
+                                <svg class="w-6 h-6 text-gold" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                            @endif
                         </div>
-                        @if($paymentMethod === 'bank_transfer')
-                            <svg class="w-6 h-6 text-gold" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
-                        @endif
-                    </div>
-                </button>
+                    </button>
+                @endforeach
 
                 @error('paymentMethod')
                     <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
@@ -207,9 +217,20 @@
                             <span>Rs {{ number_format($deliveryCharge, 0) }}</span>
                         </div>
                     @endif
-                    <h3 class="font-semibold mb-3" style="color: #0A2E23;">
-                        Send Rs {{ number_format($this->grandTotal(), 0) }} to:
-                    </h3>
+                    @if($this->needsProof())
+                        <h3 class="font-semibold mb-3" style="color: #0A2E23;">
+                            Send Rs {{ number_format($this->grandTotal(), 0) }} to:
+                        </h3>
+                    @else
+                        <h3 class="font-semibold mb-1" style="color: #0A2E23;">
+                            Amount to pay: Rs {{ number_format($this->grandTotal(), 0) }}
+                        </h3>
+                        <p class="text-sm" style="color: #888;">
+                            {{ $paymentMethod === 'cod'
+                                ? 'Pay in cash to the rider when your order is delivered. Nothing to upload.'
+                                : 'Pay in cash at our shop when you collect your order. Nothing to upload.' }}
+                        </p>
+                    @endif
 
                     @if($paymentMethod === 'bank_transfer')
                         @php $bank = array_filter($paymentAccounts['bank_transfer'] ?? []); @endphp
@@ -250,7 +271,7 @@
                 </button>
                 @php $canProceed = $paymentMethod && ($deliveryMethod !== 'delivery' || trim($deliveryAddress) !== ''); @endphp
                 <button wire:click="goToStep3" class="btn-gold flex-1 text-base py-3.5" @if(!$canProceed) disabled style="opacity: 0.5; cursor: not-allowed;" @endif>
-                    I've Sent Payment
+                    {{ $this->needsProof() ? "I've Sent Payment" : 'Place Order' }}
                     <svg class="w-5 h-5 ml-2" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
                     </svg>

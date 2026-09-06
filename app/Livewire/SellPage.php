@@ -219,6 +219,7 @@ class SellPage extends Component
         }
 
         $order = Order::create([
+            'source' => Order::SOURCE_WEBSITE,
             'metal' => $this->selectedMetal,
             'karat' => $this->selectedMetal === 'gold' ? $this->selectedKarat : null,
             'quantity' => $this->quantity,

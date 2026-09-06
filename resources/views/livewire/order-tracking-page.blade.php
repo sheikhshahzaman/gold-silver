@@ -12,17 +12,21 @@
                 <input
                     type="text"
                     wire:model.live.debounce.200ms="orderNumber"
-                    placeholder="XXXXXXXX-0000000000"
+                    placeholder="IBE-12345-12345678"
                     autocomplete="off"
-                    inputmode="text"
+                    inputmode="numeric"
                     oninput="
-                        const body = this.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 18);
-                        const first = body.slice(0, 8);
-                        const second = body.slice(8, 18);
-                        this.value = body ? `${first}${second ? `-${second}` : ''}` : '';
+                        // IBE- is added automatically and the value is always
+                        // upper case, however the customer types it.
+                        let raw = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+                        if (raw.startsWith('IBE')) raw = raw.slice(3);
+                        const digits = raw.replace(/\D/g, '').slice(0, 13);
+                        const date = digits.slice(0, 5);
+                        const serial = digits.slice(5, 13);
+                        this.value = digits ? `IBE-${date}${serial ? `-${serial}` : ''}` : '';
                     "
-                    class="flex-1 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-gold/30"
-                    style="background: #F7F2EA; border: 1px solid #E8DFD0; color: #0A2E23;"
+                    class="flex-1 rounded-xl px-4 py-3 uppercase focus:outline-none focus:ring-2 focus:ring-gold/30"
+                    style="background: #F7F2EA; border: 1px solid #E8DFD0; color: #0A2E23; text-transform: uppercase;"
                 >
                 <button type="submit" class="btn-gold px-6 py-3 rounded-xl font-semibold">Track</button>
             </div>
